@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html><head><link href="css/default.css" rel="stylesheet" type="text/css"><script src="js/jquery.min.js" type="text/javascript"></script><script src="js/page_effects.js" type="text/javascript"></script><title>pallet.crate.java documentation</title></head><body><div id="header"><h1><a href="index.html">Java 0.6.0-SNAPSHOT API documentation</a></h1></div><div class="sidebar" id="namespaces"><h3>Namespaces</h3><ul><li class="current"><a href="pallet.crate.java.html">pallet.crate.java</a></li></ul></div><div class="sidebar" id="vars"><h3>Public Vars</h3><ul><li><a href="pallet.crate.java.html#var-java">java</a></li><li><a href="pallet.crate.java.html#var-java-package-name">java-package-name</a></li><li><a href="pallet.crate.java.html#var-jce-policy-file">jce-policy-file</a></li><li><a href="pallet.crate.java.html#var-rpm-bin-file">rpm-bin-file</a></li><li><a href="pallet.crate.java.html#var-sun-version">sun-version</a></li><li><a href="pallet.crate.java.html#var-unpack-sun-rpm">unpack-sun-rpm</a></li></ul></div><div class="namespace-docs" id="content"><h2>pallet.crate.java documentation</h2><pre class="doc">Crates for java 1.6 installation and configuration.
+
+Sun Java installation on CentOS requires use of Oracle rpm's. Download from
+http://www.oracle.com/technetwork/java/javase/downloads/index.html and get
+the .rpm.bin file onto the node with remote-file.  Then pass the location of
+the rpm.bin file on the node using the :rpm-bin option. The rpm will be
+installed.</pre><div class="public" id="var-java"><h3>java</h3><div class="usage"><code>(java session &amp; options)</code></div><pre class="doc">Install java. Options can be :sun, :openjdk, :jdk, :jre.
+By default openjdk will be installed.
+
+On CentOS, when specifying :sun, you can also pass the path of the
+Oracle rpm.bin file to the :rpm-bin option, and the rpm will be installed.</pre></div><div class="public" id="var-java-package-name"><h3>java-package-name</h3><div class="usage"></div><pre class="doc">lookup package name
+</pre></div><div class="public" id="var-jce-policy-file"><h3>jce-policy-file</h3><div class="usage"><code>(jce-policy-file session filename &amp; {:as options})</code></div><pre class="doc">Installs a local JCE policy jar at the given path in the remote JAVA_HOME's
+lib/security directory, enabling the use of &quot;unlimited strength&quot; crypto
+implementations. Options are as for remote-file.
+
+e.g. (jce-policy-file
+       &quot;local_policy.jar&quot; :local-file &quot;path/to/local_policy.jar&quot;)
+
+Note this only intended to work for ubuntu/aptitude-managed systems and Sun
+JDKs right now.</pre></div><div class="public" id="var-rpm-bin-file"><h3>rpm-bin-file</h3><div class="usage"><code>(rpm-bin-file session filename &amp; {:as options})</code></div><pre class="doc">Upload an rpm bin file for java. Options are as for remote-file
+</pre></div><div class="public" id="var-sun-version"><h3>sun-version</h3><div class="usage"><code>(sun-version rpm)</code></div><pre class="doc">Extract the sun version from the rpm file name.
+(sun-version &quot;jdk-6u23-linux-x64-rpm.bin&quot;)
+  ==&gt; '(:jdk &quot;6&quot; &quot;23&quot;)</pre></div><div class="public" id="var-unpack-sun-rpm"><h3>unpack-sun-rpm</h3><div class="usage"><code>(unpack-sun-rpm session rpm-path)</code></div><pre class="doc">Unpack the sun binary rpm.
+</pre></div></div></body></html>
