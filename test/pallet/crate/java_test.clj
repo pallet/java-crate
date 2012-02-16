@@ -17,7 +17,7 @@
    [pallet.stevedore :as stevedore]
    [pallet.thread-expr :as thread-expr]
    [pallet.utils :as utils]
-   [clojure.contrib.logging :as logging])
+   [clojure.tools.logging :as logging])
   (:use clojure.test
         pallet.test-utils))
 
@@ -155,7 +155,7 @@
 (deftest centos-live-test
   (live-test/test-for
    [image (live-test/filter-images (live-test/images) rh)]
-   (logging/info (format "testing %s" (pr-str image)))
+   (logging/infof "testing %s" (pr-str image))
    (live-test/test-nodes
     [compute node-map node-types]
     {:java
