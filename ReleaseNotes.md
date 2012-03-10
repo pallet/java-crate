@@ -1,5 +1,9 @@
 # Release notes
 
+## java-0.7.0-alpha.1
+
+- Fix for clojure 1.3 compatibility
+
 - Update java crate test for latest stevedore
 
 
