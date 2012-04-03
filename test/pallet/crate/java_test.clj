@@ -1,87 +1,117 @@
 (ns pallet.crate.java-test
   (:use pallet.crate.java)
   (:require
+   [pallet.core :as core]
+   [pallet.live-test :as live-test]
    [pallet.script :as script]
    [pallet.session :as session]
    [pallet.utils :as utils]
-   [clojure.tools.logging :as logging]
-   [clojure.java.io :as io])
+   [clojure.tools.logging :as logging])
   (:use
    clojure.test
    pallet.test-utils
-   [pallet.action.environment :only [system-environment]]
-   [pallet.action.exec-script
-    :only [exec-script exec-checked-script exec-script*]]
-   [pallet.action.file :only [file]]
-   [pallet.action.package
-    :only [minimal-packages package package-manager package-source]]
-   [pallet.action.package.jpackage :only [add-jpackage]]
-   [pallet.action.remote-file :only [remote-file]]
-   [pallet.core :only [lift]]
    [pallet.build-actions :only [build-actions]]
+   [pallet.actions
+    :only [exec-script exec-checked-script file minimal-packages
+           package package-manager package-source remote-file]]
+   [pallet.context :only [with-phase-context]]
    [pallet.crate.automated-admin-user :only [automated-admin-user]]
-   [pallet.live-test
-    :only [exclude-images filter-images images test-for test-nodes]]
+   [pallet.crate.environment :only [system-environment]]
+   [pallet.monad :only [phase-pipeline]]
    [pallet.phase :only [phase-fn]]
-   [pallet.script :only [with-script-context]]
-   [pallet.script-test :only [is= is-true testing-script]]
-   [pallet.stevedore :only [script with-script-language]]
-   [pallet.thread-expr :only [when->]]))
+   [pallet.session :only [is-64bit?]]))
 
 (use-fixtures :once with-ubuntu-script-template)
 
-(defn pkg-config [session]
-  (-> session
-      (package-manager :universe)
-      (package-manager :multiverse)
-      (package-manager :update)))
+(def pkg-config
+  (phase-pipeline pkg-config {}
+    (package-manager :universe)
+    (package-manager :multiverse)
+    (package-manager :update)))
 
 (def noninteractive
   (with-script-context [:ubuntu]
     (with-script-language :pallet.stevedore.bash/bash
       (script (package-manager-non-interactive)))))
 
-(deftest settings-map-test
-  (testing "openjdk"
-    (is (= {:packages ["openjdk-6-jre"], :strategy :package
-            :vendor :openjdk :version [6] :components #{:jre}}
-           (#'pallet.crate.java/settings-map
-            {:server {:image {:os-family :ubuntu :os-version "10.10"}}}
-            {:vendor :openjdk :components #{:jre}}))))
+(defn debconf [pkg]
+  (package-manager
+   :debconf
+   (str pkg " shared/present-sun-dlj-v1-1 note")
+   (str pkg " shared/accepted-sun-dlj-v1-1 boolean true")))
 
-  (testing "oracle"
-    (is (= {:packages ["sun-java6-bin" "sun-java6-jdk"],
-            :package-source {:name "pallet-packages"
-                             :aptitude {:path "pallet-packages"
-                                        :url "file://$(pwd)/pallet-packages"
-                                        :release "./" :scopes []}}
-            :strategy :debs
-            :debs "some.tar.gz"
-            :vendor :oracle :version [6] :components #{:jdk}}
-           (#'pallet.crate.java/settings-map
-            {:server {:image {:os-family :ubuntu :os-version "10.10"}}}
-            {:vendor :oracle :components #{:jdk}
-             :debs "some.tar.gz"})))))
+;; (deftest java-default-test
+;;   (is (= (first
+;;           (build-actions
+;;            {}
+;;            (package-source
+;;             "Partner"
+;;             :aptitude {:url ubuntu-partner-url
+;;                        :scopes ["partner"]})
+;;            pkg-config
+;;            (package-manager :update)
+;;            (debconf "sun-java6-bin")
+;;            (package "sun-java6-bin")
+;;            (debconf "sun-java6-jdk")
+;;            (package "sun-java6-jdk")
+;;            (system-environment
+;;             "java"
+;;             {"JAVA_HOME" (stevedore/script (~jdk-home))})))
+;;          (first
+;;           (build-actions
+;;            {}
+;;            (java-settings {})
+;;            (install-java))))))
+
+;; (deftest java-sun-test
+;;   (is (= (first
+;;           (build-actions
+;;            {}
+;;            (package-source
+;;             "Partner"
+;;             :aptitude {:url ubuntu-partner-url
+;;                        :scopes ["partner"]})
+;;            pkg-config
+;;            (package-manager :update)
+;;            (debconf "sun-java6-bin")
+;;            (package "sun-java6-bin")
+;;            (debconf "sun-java6-jdk")
+;;            (package "sun-java6-jdk")
+;;            (system-environment
+;;             "java"
+;;             {"JAVA_HOME" (stevedore/script (~jdk-home))})))
+;;          (first
+;;           (build-actions
+;;            {}
+;;            (java-settings {:vendor :sun :components #{:bin :jdk}})
+;;            (install-java))))))
 
 (deftest java-openjdk-test
   (is (= (first
-          (build-actions {}
-            (package "openjdk-6-jre")
+          (build-actions
+              {:phase-context "install-java"}
+            (phase-pipeline package-install {}
+              (package "openjdk-6-jre"))
             (system-environment
              "java"
-             {"JAVA_HOME" (script (~java-home))})))
+             {"JAVA_HOME" (stevedore/script (~java-home))})))
          (first
-          (build-actions {}
+          (build-actions
+              {}
             (java-settings {:vendor :openjdk :components #{:jre}})
             (install-java)))))
   (is (= (first
-          (build-actions {:server {:image {} :packager :pacman}}
-            (package "openjdk-6-jre")
+          (build-actions
+              {:phase-context "install-java"
+               :server {:image {:os-family :arch}}}
+            (phase-pipeline package-install {}
+              (package "openjdk6"))
             (system-environment
              "java"
-             {"JAVA_HOME" (script (~java-home))})))
+             {"JAVA_HOME" (stevedore/script (~java-home))})))
          (first
-          (build-actions {:server {:image {} :packager :pacman}}
+          (build-actions
+              {:server {:image {:os-family :arch}}}
             (java-settings {:vendor :openjdk :components #{:jre}})
             (install-java))))))
 
@@ -100,100 +130,73 @@
 (def rh [{:os-family :centos} {:os-family :fedora} {:os-family :rhel}])
 
 (deftest live-test
-  (let [file (io/file "sun-java6-debs.tar.gz")
-        has-debs? (.canRead file)]
-    (test-for
-        [image (exclude-images (images) rh)]
-      (test-nodes
-          [compute node-map node-types]
-          {:java
-           {:image image
-            :count 1
-            :phases
-            {:bootstrap (phase-fn
-                          (minimal-packages)
-                          (package-manager :update)
-                          (automated-admin-user))
-             :settings (phase-fn
-                         (java-settings {:vendor :openjdk})
-                         (when-> has-debs?
-                           (java-settings {:vendor :oracle
-                                           :version "6"
-                                           :components #{:jdk}
-                                           :debs {:local-file (.getPath file)}
-                                           :instance-id :oracle-6}))
-                         (java-settings {:vendor :oracle :version "7"
-                                         :components #{:jdk}
-                                         :instance-id :oracle-7}))
-             :configure install-java
-             :configure2 (phase-fn
-                           (when-> has-debs?
-                             (install-java :instance-id :oracle-6)))
-             :configure3 (phase-fn
-                           (install-java :instance-id :oracle-7))
-             :verify (phase-fn
-                       (exec-script*
-                        (testing-script "Java install"
-                          (is-true @(chain-or
-                                     ("java" -version "2>/dev/null" )
-                                     ("java" --version))
-                                   "Verify java is installed")
-                          (is-true
-                           (file-exists? (str (~java-home) "/bin/java"))
-                           "Verify that java is installed under java home")
-                          (is-true
-                           (file-exists? (str (~jdk-home) "/bin/javac"))
-                           "Verify javac is installed under jdk home")
-                          "echo JAVA_HOME is ${JAVA_HOME}"
-                          ;; for some reason JAVA_HOME isn't getting set,
-                          ;; although it is in /etc/environment and seems to be
-                          ;; getting picked up in other bash sessions
-                          ;; (is= (~jdk-home) @JAVA_HOME
-                          ;;      "Verify that JAVA_HOME is set")
-                          )))}}}
-        (lift (val (first node-types))
-              :phase [:verify :configure2 :verify :configure3 :verify]
-              :compute compute)))))
+  (live-test/test-for
+   [image (live-test/exclude-images (live-test/images) rh)]
+   (live-test/test-nodes
+    [compute node-map node-types]
+    {:java
+     {:image image
+      :count 1
+      :phases {:bootstrap (phase-fn
+                            (minimal-packages)
+                            ;;(package-manager :update)
+                            (automated-admin-user))
+               :settings (java-settings {:vendor :openjdk})
+               :configure (install-java)
+               :verify (phase-fn
+                         (exec-checked-script
+                          "check java installed"
+                          ("java" -version))
+                         (exec-checked-script
+                          "check java installed under java home"
+                          ("test" (file-exists? (str (~java-home) "/bin/java"))))
+                         (exec-checked-script
+                          "check javac installed under jdk home"
+                          ("test" (file-exists? (str (~jdk-home) "/bin/javac"))))
+                         (exec-checked-script
+                          "check JAVA_HOME set to jdk home"
+                          (source "/etc/environment")
+                          ("test" (= (~jdk-home) @JAVA_HOME))))}}}
+    (core/lift (val (first node-types)) :phase :verify :compute compute))))
 
 ;; To run this test you will need to download the Oracle Java rpm downloads in
 ;; the artifacts directory.
 (deftest centos-live-test
-  (test-for [image (filter-images (images) rh)]
-    (logging/infof "testing %s" (pr-str image))
-    (test-nodes
-        [compute node-map node-types]
-        {:java
-         {:image image
-          :count 1
-          :phases
-          {:bootstrap (phase-fn
-                        (minimal-packages)
-                        (package-manager :update)
-                        (automated-admin-user))
-           :settings (fn [session]
-                       (let [is-64bit (session/is-64bit? session)]
-                         (java-settings
-                          session
-                          {:vendor :sun
-                           :rpm {:local-file
-                                 (str
-                                  "./artifacts/"
-                                  (if is-64bit
-                                    "jdk-6u23-linux-x64-rpm.bin"
-                                    "jdk-6u24-linux-i586-rpm.bin"))}})))
-           :configure install-java
-           :verify (phase-fn
-                     (exec-checked-script
-                      "check java installed"
-                      ("java" -version))
-                     (exec-checked-script
-                      "check java installed under java home"
-                      (file-exists? (quoted (str (~java-home) "/bin/java"))))
-                     (exec-checked-script
-                      "check javac installed under jdk home"
-                      (file-exists? (str (~jdk-home) "/bin/javac")))
-                     (exec-checked-script
-                      "check JAVA_HOME set to jdk home"
-                      (source "/etc/profile.d/java.sh")
-                      (= (~jdk-home) @JAVA_HOME)))}}}
-      (lift (val (first node-types)) :phase :verify :compute compute))))
+  (live-test/test-for
+   [image (live-test/filter-images (live-test/images) rh)]
+   (logging/infof "testing %s" (pr-str image))
+   (live-test/test-nodes
+    [compute node-map node-types]
+    {:java
+     {:image image
+      :count 1
+      :phases
+      {:bootstrap (phase-fn
+                    (minimal-packages)
+                    (package-manager :update)
+                    (automated-admin-user))
+       :settings (phase-fn
+                   [is-64bit (session/is-64bit?)]
+                   ;;(rpm-bin-file file :local-file (str "artifacts/" file))
+                   (java-settings {:vendor :sun
+                                   :rpm (str
+                                         "./"
+                                         (if is-64bit
+                                           "jdk-6u23-linux-x64-rpm.bin"
+                                           "jdk-6u24-linux-i586-rpm.bin"))}))
+       :configure (install-java)
+       :verify (phase-fn
+                 (exec-checked-script
+                  "check java installed"
+                  ("java" -version))
+                 (exec-checked-script
+                  "check java installed under java home"
+                  ("test" (file-exists? (str (~java-home) "/bin/java"))))
+                 (exec-checked-script
+                  "check javac installed under jdk home"
+                  ("test" (file-exists? (str (~jdk-home) "/bin/javac"))))
+                 (exec-checked-script
+                  "check JAVA_HOME set to jdk home"
+                  (source "/etc/profile.d/java.sh")
+                  ("test" (= (~jdk-home) @JAVA_HOME))))}}}
+    (core/lift (val (first node-types)) :phase :verify :compute compute))))
