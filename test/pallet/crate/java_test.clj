@@ -51,7 +51,8 @@
     (is (= {:packages ["sun-java6-bin" "sun-java6-jdk"],
             :package-source {:name "pallet-packages"
                              :aptitude {:path "pallet-packages"
-                                        :url "file://$(pwd)/pallet-packages"}}
+                                        :url "file://$(pwd)/pallet-packages"
+                                        :release "./" :scopes []}}
             :strategy :debs
             :debs "some.tar.gz"
             :vendor :oracle :version [6] :components #{:jdk}}
