@@ -155,40 +155,42 @@
 ;; To run this test you will need to download the Oracle Java rpm downloads in
 ;; the artifacts directory.
 (deftest centos-live-test
-  (test-for
-   [image (filter-images (images) rh)]
-   (logging/infof "testing %s" (pr-str image))
-   (test-nodes
-    [compute node-map node-types]
-    {:java
-     {:image image
-      :count 1
-      :phases
-      {:bootstrap (phase-fn
-                   (minimal-packages)
-                   (package-manager :update)
-                   (automated-admin-user))
-       :settings (fn [session]
-                   (let [is-64bit (session/is-64bit? session)]
-                     (java-settings {:vendor :sun
-                                     :rpm (str
-                                           "./"
-                                           (if is-64bit
-                                             "jdk-6u23-linux-x64-rpm.bin"
-                                             "jdk-6u24-linux-i586-rpm.bin"))})))
-       :configure install-java
-       :verify (phase-fn
-                (exec-checked-script
-                 "check java installed"
-                 ("java" -version))
-                (exec-checked-script
-                 "check java installed under java home"
-                 ("test" (file-exists? (str (~java-home) "/bin/java"))))
-                (exec-checked-script
-                 "check javac installed under jdk home"
-                 ("test" (file-exists? (str (~jdk-home) "/bin/javac"))))
-                (exec-checked-script
-                 "check JAVA_HOME set to jdk home"
-                 (source "/etc/profile.d/java.sh")
-                 ("test" (= (~jdk-home) @JAVA_HOME))))}}}
-    (lift (val (first node-types)) :phase :verify :compute compute))))
+  (test-for [image (filter-images (images) rh)]
+    (logging/infof "testing %s" (pr-str image))
+    (test-nodes
+        [compute node-map node-types]
+        {:java
+         {:image image
+          :count 1
+          :phases
+          {:bootstrap (phase-fn
+                        (minimal-packages)
+                        (package-manager :update)
+                        (automated-admin-user))
+           :settings (fn [session]
+                       (let [is-64bit (session/is-64bit? session)]
+                         (java-settings
+                          session
+                          {:vendor :sun
+                           :rpm {:local-file
+                                 (str
+                                  "./artifacts/"
+                                  (if is-64bit
+                                    "jdk-6u23-linux-x64-rpm.bin"
+                                    "jdk-6u24-linux-i586-rpm.bin"))}})))
+           :configure install-java
+           :verify (phase-fn
+                     (exec-checked-script
+                      "check java installed"
+                      ("java" -version))
+                     (exec-checked-script
+                      "check java installed under java home"
+                      (file-exists? (quoted (str (~java-home) "/bin/java"))))
+                     (exec-checked-script
+                      "check javac installed under jdk home"
+                      (file-exists? (str (~jdk-home) "/bin/javac")))
+                     (exec-checked-script
+                      "check JAVA_HOME set to jdk home"
+                      (source "/etc/profile.d/java.sh")
+                      (= (~jdk-home) @JAVA_HOME)))}}}
+      (lift (val (first node-types)) :phase :verify :compute compute))))

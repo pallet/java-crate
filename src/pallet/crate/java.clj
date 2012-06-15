@@ -375,6 +375,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   "Upload an rpm bin file for java. Options are as for remote-file"
   [session settings]
   (->
+   session
    (with-action-options {:action-id ::upload-rpm-bin
                          :always-before ::unpack-sun-rpm}
      (apply-map->
@@ -387,7 +388,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
       (format "Unpack java rpm %s" "java.rpm.bin")
       (~lib/heredoc "java-bin-resp" "A\n\n" {})
       (chmod "+x" "java.rpm.bin")
-      ("java.rpm.bin" < "java-bin-resp")))))
+      ("./java.rpm.bin" < "java-bin-resp")))))
 
 ;;; ## deb files install
 (defn deb-install
