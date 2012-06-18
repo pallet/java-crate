@@ -29,14 +29,16 @@
    [pallet.action.remote-file :only [remote-file]]
    [pallet.common.context :only [throw-map]]
    [pallet.compute :only [os-hierarchy]]
+   [pallet.core :only [server-spec]]
    [pallet.crate.environment :only [system-environment]]
    [pallet.crate.package-repo :only [repository-packages rebuild-repository]]
    [pallet.parameter :only [assoc-target-settings get-target-settings]]
    [pallet.thread-expr :only [when-> apply-map->]]
    [pallet.utils :only [apply-map]]
    [pallet.version-dispatch
-    :only [defmulti-version-crate defmulti-version
-           multi-version-session-method multi-version-method]]
+    :only [defmulti-version-crate defmulti-version defmulti-os-crate
+           multi-version-session-method multi-version-method
+           multi-os-session-method]]
    [pallet.versions :only [version-string]]))
 
 (def vendor-keywords #{:openjdk :sun :oracle})
@@ -48,7 +50,7 @@
 (script/defscript java-home [])
 (script/defimpl java-home :default []
   @("dirname" @("dirname" @("readlink" -f @("which" java)))))
-(script/defimpl java-home [#{:aptitude}] []
+(script/defimpl java-home [#{:aptitude :apt}] []
   @("dirname"
     @("dirname"
       @(pipe ("update-alternatives" --list java) (head -1)))))
@@ -58,7 +60,7 @@
 (script/defscript jdk-home [])
 (script/defimpl jdk-home :default []
   @("dirname" @("dirname" @("readlink" -f @("which" javac)))))
-(script/defimpl jdk-home [#{:aptitude}] []
+(script/defimpl jdk-home [#{:aptitude :apt}] []
   @("dirname"
     @("dirname"
       @(pipe ("update-alternatives" --list javac) (head -1)))))
@@ -69,6 +71,19 @@
 (script/defimpl jre-lib-security :default []
   (str @(update-java-alternatives -l "|" cut "-d ' '" -f 3 "|" head -1)
        "/jre/lib/security/"))
+
+;;; Default Java package version
+(defmulti-os-crate java-package-version [session])
+
+(multi-os-session-method
+    java-package-version {:os :linux}
+    [os os-version session]
+  [6])
+
+(multi-os-session-method
+    java-package-version {:os :ubuntu :os-version [12]}
+    [os os-version session]
+  [7])
 
 ;;; ## openJDK package names
 (defmulti-version openjdk-packages [os os-version version components]
@@ -329,8 +344,10 @@ Use the webupd8.org ppa. This is the default
 
 http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
 "
-  [session {:keys [vendor version components instance-id] :as settings}]
-  (let [settings (settings-map session settings)]
+  [session {:keys [vendor version components instance-id]
+            :or {version (java-package-version session)}
+            :as settings}]
+  (let [settings (settings-map session (merge {:version version} settings))]
     (assoc-target-settings session :java instance-id settings)))
 
 ;;; ## Environment variable helpers
@@ -359,10 +376,13 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
         _ (logging/infof "update package list with %s" pkg-list-update)
         session (->
                  session
-                 (apply-map->
-                  package-source repo-name (:package-source settings))
-                 (with-action-options {:always-before #{`package}
-                                       :always-after #{`package-source}}
+                 (with-action-options {:action-id ::install-package-source}
+                   (apply-map->
+                    package-source repo-name (:package-source settings)))
+                 (with-action-options
+                     {:always-before #{`package}
+                      :always-after #{`package-source ::deb-install}
+                      :action-id ::update-package-source}
                    (exec-checked-script
                     (str "Update package list for repository " repo-name)
                     ~pkg-list-update)))]
@@ -400,19 +420,20 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   (let [path (-> settings :package-source :aptitude :path)]
     (->
      session
-     (with-action-options {:action-id ::upload-debs
-                           :always-before ::install-sun-debs}
+     (with-action-options
+         {:action-id ::deb-install
+          :always-before #{::update-package-source ::install-package-source}}
        (apply-map->
         remote-directory path
         (merge
          {:local-file-options
-          {:always-before #{::install-sun-deb}} :mode "755"
+          {:always-before #{::update-package-source ::install-package-source}}
+          :mode "755"
           :strip-components 0}
          (:debs settings)))
        (repository-packages)
        (rebuild-repository path))
-     (with-action-options {:action-id ::install-sun-debs}
-       (package-source-install settings)))))
+     (package-source-install settings))))
 
 ;;;  ## w8 PPA install
 
@@ -475,3 +496,10 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   (apply-map remote-file session
     (stevedore/script (str (jre-lib-security) ~filename))
     (merge {:owner "root" :group "root" :mode 644} options)))
+
+(defn java
+  "Returns a service-spec for installing java."
+  [settings]
+  (server-spec
+   :phase {:settings (java-settings settings)
+           :configure (install-java)}))
