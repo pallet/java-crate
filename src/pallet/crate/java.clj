@@ -94,7 +94,7 @@
     [os os-version version components]
   (map
    (comp
-    (partial str "openjdk-" (version-string version) "-")
+    (partial str "java-1." (version-string version) ".0-openjdk")
     #({:jdk "-devel" :jre ""} % ""))
    components))
 
