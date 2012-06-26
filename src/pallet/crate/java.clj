@@ -345,7 +345,7 @@ Use the webupd8.org ppa. This is the default
 http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
 "
   [session {:keys [vendor version components instance-id]
-            :or {version (java-package-version session)}
+            :or {version (version-string (java-package-version session))}
             :as settings}]
   (let [settings (settings-map session (merge {:version version} settings))]
     (assoc-target-settings session :java instance-id settings)))
