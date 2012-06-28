@@ -5,10 +5,10 @@
     <groupId>org.cloudhoist</groupId>
     <artifactId>pallet-crate-pom</artifactId>
     <version>0.7.1</version>
-    <relativePath></relativePath>
+    <relativePath />
   </parent>
   <artifactId>java</artifactId>
-  <version>0.7.0-SNAPSHOT</version>
+  <version>0.7.0</version>
 
   <scm>
     <connection>scm:git:git://github.com/pallet/pallet-crates.git</connection>
