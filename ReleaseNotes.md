@@ -1,5 +1,26 @@
 # Release notes
 
+## java-0.7.0
+
+- Update java crate to use settings
+
+### Fixes
+- Set default package version as string
+
+- Fix redhat package names
+
+- Update for ubuntu 12.04
+
+- Fix rpm install on redhat based distros
+
+- Remove repository from pom
+
+- Update tests
+
+- Fix test case
+
+- Fix install via debs and via ppa
+
 ## java-0.7.0-alpha.1
 
 - Fix for clojure 1.3 compatibility
