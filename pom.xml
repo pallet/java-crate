@@ -5,6 +5,7 @@
     <groupId>org.cloudhoist</groupId>
     <artifactId>pallet-crate-pom</artifactId>
     <version>0.8.0-SNAPSHOT</version>
+    <relativePath></relativePath>
   </parent>
   <artifactId>java</artifactId>
   <version>0.8.0-SNAPSHOT</version>
@@ -14,12 +15,4 @@
     <developerConnection>scm:git:ssh://git@github.com/pallet/java-crate.git</developerConnection>
     <url>https://github.com/pallet/java-crate</url>
   </scm>
-
-  <!-- make sure we can find the parent pom -->
-  <repositories>
-    <repository>
-      <id>sonatype</id>
-      <url>http://oss.sonatype.org/content/repositories/releases</url>
-    </repository>
-  </repositories>
 </project>
