@@ -11,28 +11,26 @@
 ;;http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
 
   (:require
-   [clojure.tools.logging :as logging]
-   [pallet.action :as action]
-   [pallet.script :as script]
-   [pallet.script.lib :as lib]
-   [pallet.stevedore :as stevedore]
-   [clojure.string :as string])
+   [pallet.script.lib :as lib])
   (:use
    [clojure.algo.monads :only [m-map]]
    [pallet.action :only [with-action-options]]
    [pallet.actions
     :only [exec-script exec-checked-script install-deb package package-source
-           remote-directory remote-file]]
+           remote-directory remote-file pipeline-when]]
+   [pallet.api :only [server-spec]]
    [pallet.common.context :only [throw-map]]
    [pallet.compute :only [os-hierarchy]]
-   [pallet.crate :only [def-plan-fn assoc-settings get-settings plan-method]]
+   [pallet.crate :only [def-plan-fn assoc-settings get-settings defmethod-plan]]
    [pallet.crate-install :only [install]]
    [pallet.crate.environment :only [system-environment]]
    [pallet.monad :only [chain-s]]
+   [pallet.stevedore :only [script]]
+   [pallet.script :only [defimpl defscript]]
    [pallet.utils :only [apply-map]]
    [pallet.version-dispatch
-    :only [defmulti-version-crate defmulti-version
-           multi-version-crate-method multi-version-method
+    :only [defmulti-version-plan defmulti-version
+           defmethod-version-plan defmethod-version
            os-map os-map-lookup]]
    [pallet.versions :only [version-string]]))
 
@@ -41,28 +39,28 @@
 (def all-keywords (into #{} (concat vendor-keywords component-keywords)))
 
 ;;; ## Script
-(script/defscript java-home [])
-(script/defimpl java-home :default []
+(defscript java-home [])
+(defimpl java-home :default []
   @("dirname" @("dirname" @("readlink" -f @("which" java)))))
-(script/defimpl java-home [#{:aptitude :apt}] []
+(defimpl java-home [#{:aptitude :apt}] []
   @("dirname"
     @("dirname"
       @(pipe ("update-alternatives" --list java) (head -1)))))
-(script/defimpl java-home [#{:darwin :os-x}] []
+(defimpl java-home [#{:darwin :os-x}] []
    @JAVA_HOME)
 
-(script/defscript jdk-home [])
-(script/defimpl jdk-home :default []
+(defscript jdk-home [])
+(defimpl jdk-home :default []
   @("dirname" @("dirname" @("readlink" -f @("which" javac)))))
-(script/defimpl jdk-home [#{:aptitude :apt}] []
+(defimpl jdk-home [#{:aptitude :apt}] []
   @("dirname"
     @("dirname"
       @(pipe ("update-alternatives" --list javac) (head -1)))))
-(script/defimpl jdk-home [#{:darwin :os-x}] []
+(defimpl jdk-home [#{:darwin :os-x}] []
    @JAVA_HOME)
 
-(script/defscript jre-lib-security [])
-(script/defimpl jre-lib-security :default []
+(defscript jre-lib-security [])
+(defimpl jre-lib-security :default []
   (str @(update-java-alternatives -l "|" cut "-d ' '" -f 3 "|" head -1)
        "/jre/lib/security/"))
 
@@ -78,14 +76,14 @@
 (def java-package-version
   (atom                                 ; allow for open extension
    (os-map
-    {{:os-family :linux} [6]
-     {:os-family :ubuntu :os-version [12]} [7]})))
+    {{:os :linux} [6]
+     {:os :ubuntu :os-version [12]} [7]})))
 
 ;;; ## openJDK package names
 (defmulti-version openjdk-packages [os os-version version components]
   #'os-hierarchy)
 
-(multi-version-method
+(defmethod-version
     openjdk-packages {:os :rh-base}
     [os os-version version components]
   (map
@@ -94,14 +92,14 @@
     #({:jdk "-devel" :jre ""} % ""))
    components))
 
-(multi-version-method
+(defmethod-version
     openjdk-packages {:os :debian-base}
     [os os-version version components]
   (map
    (comp (partial str "openjdk-" (version-string version) "-") name)
    components))
 
-(multi-version-method
+(defmethod-version
     openjdk-packages {:os :arch-base}
     [os os-version version components]
   [(str "openjdk" (version-string version))])
@@ -110,7 +108,7 @@
 (defmulti-version oracle-packages [os os-version version components]
   #'os-hierarchy)
 
-(multi-version-method
+(defmethod-version
     oracle-packages {:os :rh-base :version [7]}
     [os os-version version components]
   (map
@@ -119,7 +117,7 @@
     #({:jdk "-devel" :jre ""} % ""))
    components))
 
-(multi-version-method
+(defmethod-version
     oracle-packages {:os :rh-base :version [6]}
     [os os-version version components]
   (map
@@ -128,7 +126,7 @@
     #({:jdk "-devel" :jre ""} % ""))
    components))
 
-(multi-version-method
+(defmethod-version
     oracle-packages {:os :debian-base :version [7]}
     [os os-version version components]
   {:pre [(seq components)]}
@@ -138,7 +136,7 @@
     components)
    (str "oracle-java" (version-string version) "-bin")))
 
-(multi-version-method
+(defmethod-version
     oracle-packages {:os :debian-base :version [6]}
     [os os-version version components]
   {:pre [(seq components)]}
@@ -148,12 +146,12 @@
     components)
    (str "sun-java" (version-string version) "-bin")))
 
-(multi-version-method
+(defmethod-version
     oracle-packages {:os :arch-base :version [7]}
     [os os-version version components]
   [(str "oracle-java" (version-string version))])
 
-(multi-version-method
+(defmethod-version
     oracle-packages {:os :arch-base :version [6]}
     [os os-version version components]
   [(str "sun-java" (version-string version))])
@@ -162,126 +160,131 @@
 ;;; Based on supplied settings, decide which install strategy we are using
 ;;; for oracle java.
 
-(defmulti-version-crate oracle-java-settings [session version settings])
+(defmulti-version-plan oracle-java-settings [version settings])
 
-(multi-version-crate-method
+(defmethod-version-plan
     oracle-java-settings {:os :rh-base}
-    [os os-version version session settings]
-  (cond
-    (:strategy settings) settings
-    (:rpm settings) (assoc settings :strategy :rpm)
-    (:package-source settings) (assoc settings
-                                 :strategy :package-source
-                                 :packages (oracle-packages
-                                            os os-version version
-                                            (:components settings)))
-    :else (throw (Exception. "No install method selected for Oracle JDK"))))
+    [os os-version version settings]
+  (m-result
+   (cond
+     (:install-strategy settings) settings
+     (:rpm settings) (assoc settings :install-strategy ::rpm-bin)
+     (:package-source settings) (assoc settings
+                                  :install-strategy :package-source
+                                  :packages (oracle-packages
+                                             os os-version version
+                                             (:components settings)))
+     :else (throw (Exception. "No install method selected for Oracle JDK")))))
 
-(multi-version-crate-method
+(defmethod-version-plan
     oracle-java-settings {:os :debian-base :version [7]}
-    [os os-version version session settings]
-  (let [strategy (:strategy settings)]
-    (cond
-      (or (= strategy :debs) (:debs settings))
-      (->
-       settings
-       (assoc :strategy :debs)
-       (update-in
-        [:packages]
-        #(or % (oracle-packages os os-version version (:components settings))))
-       (update-in
-        [:package-source :aptitude]
-        #(or (and % (assoc % :package-path (.getPath (java.net.URL. (:url %)))))
-             {:path "pallet-packages"
-              :url "file://$(pwd)/pallet-packages"
-              :release "./"
-              :scopes []}))
-       (update-in
-        [:package-source]
-        #(merge {:name "pallet-packages"} %)))
+    [os os-version version settings]
+  [strategy (m-result (:install-strategy settings))]
+  (m-result
+   (cond
+     (or (= strategy :debs) (:debs settings))
+     (->
+      settings
+      (assoc :install-strategy :debs)
+      (update-in
+       [:packages]
+       #(or % (oracle-packages os os-version version (:components settings))))
+      (update-in
+       [:package-source :aptitude]
+       #(or (and % (assoc % :package-path (.getPath (java.net.URL. (:url %)))))
+            {:path "pallet-packages"
+             :url "file://$(pwd)/pallet-packages"
+             :release "./"
+             :scopes []}))
+      (update-in
+       [:package-source]
+       #(merge {:name "pallet-packages"} %)))
 
-      (or (= strategy :package-source) (:package-source settings))
-      (->
-       settings
-       (assoc :strategy :package-source)
-       (update-in
-        [:packages]
-        #(or % (oracle-packages os os-version version (:components settings)))))
+     (or (= strategy :package-source) (:package-source settings))
+     (->
+      settings
+      (assoc :install-strategy :package-source)
+      (update-in
+       [:packages]
+       #(or % (oracle-packages os os-version version (:components settings)))))
 
-      :else
-      (->
-       settings
-       (assoc :strategy :w8-ppa)
-       (update-in
-        [:packages]
-        #(or % ["oracle-java7-installer"]))
-       (update-in
-        [:package-source :aptitude]
-        #(or % {:url "ppa:webupd8team/java"}))
-       (update-in
-        [:package-source :name]
-        #(or % "webupd8team-java-$(lsb_release -c -s)"))))))
+     :else
+     (->
+      settings
+      (assoc :install-strategy :w8-ppa)
+      (update-in
+       [:packages]
+       #(or % ["oracle-java7-installer"]))
+      (update-in
+       [:package-source :aptitude]
+       #(or % {:url "ppa:webupd8team/java"}))
+      (update-in
+       [:package-source :name]
+       #(or % "webupd8team-java-$(lsb_release -c -s)"))))))
 
-(multi-version-crate-method
+(defmethod-version-plan
     oracle-java-settings {:os :debian-base :version [6]}
-    [os os-version version session settings]
-  (let [strategy (:strategy settings)]
-    (cond
-      (or (= strategy :debs) (:debs settings))
-      (->
-       settings
-       (assoc :strategy :debs)
-       (update-in
-        [:packages]
-        #(or % (oracle-packages os os-version version (:components settings))))
-       (update-in
-        [:package-source :aptitude]
-        #(or (and % (assoc % :package-path (.getPath (java.net.URL. (:url %)))))
-             {:path "pallet-packages"
-              :url "file://$(pwd)/pallet-packages"
-              :release "./"
-              :scopes []}))
-       (update-in
-        [:package-source]
-        #(merge {:name "pallet-packages"} %)))
-      (or (= strategy :package-source) (:package-source settings))
-      (->
-       settings
-       (assoc :strategy :package-source)
-       (update-in
-        [:packages]
-        #(or % (oracle-packages os os-version version (:components settings)))))
+    [os os-version version settings]
+  [strategy (m-result (:install-strategy settings))]
+  (m-result
+   (cond
+     (or (= strategy :debs) (:debs settings))
+     (->
+      settings
+      (assoc :install-strategy :debs)
+      (update-in
+       [:packages]
+       #(or % (oracle-packages os os-version version (:components settings))))
+      (update-in
+       [:package-source :aptitude]
+       #(or (and % (assoc % :package-path (.getPath (java.net.URL. (:url %)))))
+            {:path "pallet-packages"
+             :url "file://$(pwd)/pallet-packages"
+             :release "./"
+             :scopes []}))
+      (update-in
+       [:package-source]
+       #(merge {:name "pallet-packages"} %)))
+     (or (= strategy :package-source) (:package-source settings))
+     (->
+      settings
+      (assoc :install-strategy :package-source)
+      (update-in
+       [:packages]
+       #(or % (oracle-packages os os-version version (:components settings)))))
 
-      :else (throw
-             (Exception. "No install method selected for Oracle java 6")))))
+     :else (throw
+            (Exception. "No install method selected for Oracle java 6")))))
 
 
 ;;; ## OpenJDK java
 ;;; Based on supplied settings, decide which install strategy we are using
 ;;; for openjdk java.
-(defmulti-version-crate openjdk-java-settings [version session settings])
+(defmulti-version-plan openjdk-java-settings [version settings])
 
-(multi-version-crate-method
+(defmethod-version-plan
     openjdk-java-settings {:os :linux :version [7]}
-    [os os-version version session settings]
-  (cond
-    (:strategy settings) settings
-    :else (assoc settings
-            :strategy :package
-            :packages (openjdk-packages
-                       os os-version version
-                       (:components settings)))))
+    [os os-version version settings]
+  [settings (m-result
+             (cond
+               (:install-strategy settings) settings
+               :else (assoc settings
+                       :install-strategy :packages
+                       :packages (openjdk-packages
+                                  os os-version version
+                                  (:components settings)))))])
 
-(multi-version-crate-method
+(defmethod-version-plan
     openjdk-java-settings {:os :linux :version [6]}
-    [os os-version version session settings]
-  (cond
-    (:strategy settings) settings
-    :else (assoc settings
-            :strategy :package
-            :packages (openjdk-packages
-                       os os-version version
-                       (:components settings)))))
+    [os os-version version settings]
+  [settings (m-result
+             (cond
+               (:install-strategy settings) settings
+               :else (assoc settings
+                       :install-strategy :packages
+                       :packages (openjdk-packages
+                                  os os-version version
+                                  (:components settings)))))])
 
 ;;; ## Settings
 (defn- settings-map
@@ -289,11 +292,10 @@
   [settings]
   ;; TODO - lookup default java version based on os-version
   (fn [session]
-    (let [settings (merge {:vendor :openjdk :version [6] :components #{:jdk}}
-                        settings)]
-    (if (= :openjdk (:vendor settings))
-      (openjdk-java-settings session (:version settings) settings)
-      (oracle-java-settings session (:version settings) settings)))))
+    (let [settings (merge {:vendor :openjdk :components #{:jdk}} settings)]
+      (if (= :openjdk (:vendor settings))
+        ((openjdk-java-settings (:version settings) settings) session)
+        ((oracle-java-settings (:version settings) settings) session)))))
 
 (def-plan-fn java-settings
   "Capture settings for java
@@ -339,26 +341,26 @@ Use the webupd8.org ppa. This is the default
 
 http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   [{:keys [vendor version components instance-id] :as settings}]
-  [default-version (os-map-lookup java-package-version)
+  [default-version (os-map-lookup @java-package-version)
    settings (settings-map
-             (merge {:version (or  version (version-string default-version))}
+             (merge {:version (or version (version-string default-version))}
                     settings))]
-  (assoc-settings :java instance-id settings))
+  (assoc-settings :java settings {:instance-id instance-id}))
 
 ;;; ## Environment variable helpers
 (def-plan-fn set-environment
   [components]
-  (when (:jdk components)
+  (pipeline-when (:jdk components)
     (system-environment
-     "java" {"JAVA_HOME" (stevedore/script (~jdk-home))}))
-  (when (and (:jre components) (not (:jdk components)))
+     "java" {"JAVA_HOME" (script (~jdk-home))}))
+  (pipeline-when (and (:jre components) (not (:jdk components)))
     (system-environment
-     "java" {"JAVA_HOME" (stevedore/script (~java-home))})))
+     "java" {"JAVA_HOME" (script (~java-home))})))
 
 ;;; # Install
 
 ;;; custom install method for oracle rpm.bin method
-(plan-method install ::rpm-bin
+(defmethod-plan install ::rpm-bin
   [facility instance-id]
   [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
   (with-action-options {:action-id ::upload-rpm-bin
@@ -378,15 +380,10 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
 (def-plan-fn install-java
   "Install java. OpenJDK installs from system packages by default."
   [& {:keys [instance-id]}]
-  [settings (get-settings :java instance-id ::no-settings)]
-  (if (= settings ::no-settings)
-    (throw-map
-     "Attempt to install java without specifying settings"
-     {:message "Attempt to install java without specifying settings"
-      :type :invalid-operation})
-    (chain-s
-     (install :java instance-id)
-     (set-environment (:components settings)))))
+  [settings (get-settings
+             :java {:instance-id instance-id :default ::no-settings})]
+  (install :java instance-id)
+  (set-environment (:components settings)))
 
 (def-plan-fn jce-policy-file
   "Installs a local JCE policy jar at the given path in the remote JAVA_HOME's
@@ -400,5 +397,12 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
    JDKs right now."
   [filename & {:as options}]
   (apply-map remote-file
-    (stevedore/script (str (jre-lib-security) ~filename))
+    (script (str (jre-lib-security) ~filename))
     (merge {:owner "root" :group "root" :mode 644} options)))
+
+(defn java
+  "Returns a service-spec for installing java."
+  [settings]
+  (server-spec
+   :phase {:settings (java-settings settings)
+           :configure (install-java)}))
