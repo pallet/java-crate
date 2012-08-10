@@ -33,6 +33,7 @@
    [pallet.crate.environment :only [system-environment]]
    [pallet.crate.package-repo :only [repository-packages rebuild-repository]]
    [pallet.parameter :only [assoc-target-settings get-target-settings]]
+   [pallet.phase :only [phase-fn]]
    [pallet.thread-expr :only [when-> apply-map->]]
    [pallet.utils :only [apply-map]]
    [pallet.version-dispatch
@@ -501,5 +502,5 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   "Returns a service-spec for installing java."
   [settings]
   (server-spec
-   :phase {:settings (java-settings settings)
-           :configure (install-java)}))
+   :phase {:settings (phase-fn (java-settings settings))
+           :configure (phase-fn (install-java))}))
