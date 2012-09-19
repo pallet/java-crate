@@ -502,5 +502,5 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   "Returns a service-spec for installing java."
   [settings]
   (server-spec
-   :phase {:settings (phase-fn (java-settings settings))
-           :configure (phase-fn (install-java))}))
+   :phases {:settings (phase-fn (java-settings settings))
+            :configure (phase-fn (install-java))}))
