@@ -18,7 +18,7 @@
    [pallet.actions
     :only [exec-script exec-checked-script install-deb package package-source
            remote-directory remote-file pipeline-when]]
-   [pallet.api :only [server-spec]]
+   [pallet.api :only [plan-fn server-spec]]
    [pallet.common.context :only [throw-map]]
    [pallet.compute :only [os-hierarchy]]
    [pallet.crate :only [def-plan-fn assoc-settings get-settings defmethod-plan]]
@@ -404,5 +404,5 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   "Returns a service-spec for installing java."
   [settings]
   (server-spec
-   :phase {:settings (java-settings settings)
-           :configure (install-java)}))
+   :phases {:settings (plan-fn (java-settings settings))
+            :configure (plan-fn (install-java))}))
