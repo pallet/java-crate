@@ -171,7 +171,7 @@
                           ;; (is= (~jdk-home) @JAVA_HOME
                           ;;      "Verify that JAVA_HOME is set")
                           )))}}}
-        (lift (val (first node-types))
+          @(lift (val (first node-types))
               :phase [:verify :configure2 :verify :configure3 :verify]
               :compute compute)))))
 
@@ -215,4 +215,4 @@
                       "check JAVA_HOME set to jdk home"
                       (source "/etc/profile.d/java.sh")
                       (= (~jdk-home) @JAVA_HOME)))}}}
-      (lift (val (first node-types)) :phase :verify :compute compute))))
+        @(lift (val (first node-types)) :phase :verify :compute compute))))
