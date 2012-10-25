@@ -443,7 +443,20 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
 (defn w8-install
   "Install via the w8 PPA."
   [session settings]
-  (package-source-install session settings))
+  (->
+   session
+   (with-action-options
+     {:always-before #{`package}
+      :always-after #{`package-source ::deb-install}
+      :action-id ::accept-oracle-license}
+     (exec-checked-script
+      "Accept Oracle license"
+      (pipe
+       (println
+        oracle-java7-installer "shared/accepted-oracle-license-v1-1"
+        select true)
+       ("/usr/bin/debconf-set-selections"))))
+   (package-source-install settings)))
 
 ;;; ## download install
 (defn download-install
