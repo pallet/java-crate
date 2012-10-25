@@ -373,7 +373,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   [session settings]
   (let [repo-name (-> settings :package-source :name)
         _ (assert repo-name)    ;  "Must provide a repo name for package-source"
-        pkg-list-update (package-manager* session :update :t repo-name)
+        pkg-list-update (package-manager* session :update)
         _ (logging/infof "update package list with %s" pkg-list-update)
         session (->
                  session
