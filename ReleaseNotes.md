@@ -1,5 +1,13 @@
 # Release notes
 
+## java-0.7.1
+
+- Add acceptance of oracle license in w8 install
+
+- Fix package manager update for w8 install
+
+- Fix java server-spec
+
 ## java-0.7.0
 
 - Update java crate to use settings

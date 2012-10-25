@@ -94,6 +94,9 @@
     (install-java)
     (jce-policy-file "f" :content ""))))
 
+(deftest spec-test
+  (is (map? (java {:vendor :openjdk}))))
+
 (def rh [{:os-family :centos} {:os-family :fedora} {:os-family :rhel}])
 
 (deftest live-test

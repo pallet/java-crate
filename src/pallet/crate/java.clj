@@ -33,6 +33,7 @@
    [pallet.crate.environment :only [system-environment]]
    [pallet.crate.package-repo :only [repository-packages rebuild-repository]]
    [pallet.parameter :only [assoc-target-settings get-target-settings]]
+   [pallet.phase :only [phase-fn]]
    [pallet.thread-expr :only [when-> apply-map->]]
    [pallet.utils :only [apply-map]]
    [pallet.version-dispatch
@@ -372,7 +373,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   [session settings]
   (let [repo-name (-> settings :package-source :name)
         _ (assert repo-name)    ;  "Must provide a repo name for package-source"
-        pkg-list-update (package-manager* session :update :t repo-name)
+        pkg-list-update (package-manager* session :update)
         _ (logging/infof "update package list with %s" pkg-list-update)
         session (->
                  session
@@ -442,7 +443,20 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
 (defn w8-install
   "Install via the w8 PPA."
   [session settings]
-  (package-source-install session settings))
+  (->
+   session
+   (with-action-options
+     {:always-before #{`package}
+      :always-after #{`package-source ::deb-install}
+      :action-id ::accept-oracle-license}
+     (exec-checked-script
+      "Accept Oracle license"
+      (pipe
+       (println
+        oracle-java7-installer "shared/accepted-oracle-license-v1-1"
+        select true)
+       ("/usr/bin/debconf-set-selections"))))
+   (package-source-install settings)))
 
 ;;; ## download install
 (defn download-install
@@ -501,5 +515,5 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   "Returns a service-spec for installing java."
   [settings]
   (server-spec
-   :phase {:settings (java-settings settings)
-           :configure (install-java)}))
+   :phases {:settings (phase-fn (java-settings settings))
+            :configure (phase-fn (install-java))}))
