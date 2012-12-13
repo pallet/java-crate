@@ -45,7 +45,7 @@
 (defimpl java-home [#{:aptitude :apt}] []
   @("dirname"
     @("dirname"
-      @(pipe ("update-alternatives" --list java) (head -1)))))
+      @(pipe ("update-alternatives" --list java) (head -n 1)))))
 (defimpl java-home [#{:darwin :os-x}] []
    @JAVA_HOME)
 
@@ -55,7 +55,7 @@
 (defimpl jdk-home [#{:aptitude :apt}] []
   @("dirname"
     @("dirname"
-      @(pipe ("update-alternatives" --list javac) (head -1)))))
+      @(pipe ("update-alternatives" --list javac) (head -n 1)))))
 (defimpl jdk-home [#{:darwin :os-x}] []
    @JAVA_HOME)
 
