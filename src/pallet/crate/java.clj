@@ -40,7 +40,8 @@
 (defimpl java-home :default []
   @("dirname" @("dirname" @("readlink" -f @("which" java)))))
 (defimpl java-home [#{:aptitude}] []
-  @("dirname" @("dirname" @("update-alternatives" --list java))))
+  @("dirname" @("dirname" @(pipe ("update-alternatives" --list java)
+                                 (head -n 1)))))
 (defimpl java-home [#{:darwin :os-x}] []
    @JAVA_HOME)
 
@@ -48,7 +49,8 @@
 (defimpl jdk-home :default []
   @("dirname" @("dirname" @("readlink" -f @("which" javac)))))
 (defimpl jdk-home [#{:aptitude}] []
-  @("dirname" @("dirname" @("update-alternatives" --list javac))))
+  @("dirname" @("dirname" @(pipe ("update-alternatives" --list javac)
+                                 (head -n 1)))))
 (defimpl jdk-home [#{:darwin :os-x}] []
    @JAVA_HOME)
 
