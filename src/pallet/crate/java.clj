@@ -24,6 +24,7 @@
    [pallet.crate :only [def-plan-fn assoc-settings get-settings defmethod-plan]]
    [pallet.crate-install :only [install]]
    [pallet.crate.environment :only [system-environment]]
+   [pallet.debug :only [debugf]]
    [pallet.monad :only [chain-s]]
    [pallet.stevedore :only [script]]
    [pallet.script :only [defimpl defscript]]
@@ -350,10 +351,11 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
 ;;; ## Environment variable helpers
 (def-plan-fn set-environment
   [components]
-  (pipeline-when (:jdk components)
+  (debugf "set-environment for java components %s" components)
+  (m-when (:jdk components)
     (system-environment
      "java" {"JAVA_HOME" (script (~jdk-home))}))
-  (pipeline-when (and (:jre components) (not (:jdk components)))
+  (m-when (and (:jre components) (not (:jdk components)))
     (system-environment
      "java" {"JAVA_HOME" (script (~java-home))})))
 
