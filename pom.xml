@@ -15,4 +15,8 @@
     <developerConnection>scm:git:ssh://git@github.com/pallet/java-crate.git</developerConnection>
     <url>https://github.com/pallet/java-crate</url>
   </scm>
+
+  <properties>
+    <clojure.version>1.4.0</clojure.version>
+  </properties>
 </project>
