@@ -13,7 +13,7 @@
   (:require
    [pallet.script.lib :as lib])
   (:use
-   [clojure.algo.monads :only [m-map]]
+   [pallet.monad.state-monad :only [m-map m-when]]
    [pallet.action :only [with-action-options]]
    [pallet.actions
     :only [exec-script exec-checked-script install-deb package package-source
