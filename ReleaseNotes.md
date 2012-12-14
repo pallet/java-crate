@@ -1,5 +1,9 @@
 # Release notes
 
+## java-0.8.0-alpha.1
+
+- Initial release for pallet 0.8.0-alpha.6
+
 ## java-0.7.1
 
 - Add acceptance of oracle license in w8 install
