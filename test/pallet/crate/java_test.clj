@@ -14,16 +14,15 @@
    [pallet.api :only [lift plan-fn]]
    [pallet.build-actions :only [build-actions build-session]]
    [pallet.actions
-    :only [exec-script exec-script* exec-checked-script file minimal-packages
-           package package-manager package-source remote-file
-           pipeline-when]]
+    :only [exec-script exec-script* exec-checked-script minimal-packages
+           package package-manager remote-file plan-when]]
    [pallet.context :only [with-phase-context]]
+   [pallet.core.session :only [with-session]]
    [pallet.crate :only [is-64bit?]]
    [pallet.crate.automated-admin-user :only [automated-admin-user]]
    [pallet.crate.environment :only [system-environment]]
    [pallet.live-test
     :only [exclude-images filter-images images test-for test-nodes]]
-   [pallet.monad :only [chain-s phase-pipeline wrap-pipeline]]
    [pallet.script :only [with-script-context]]
    [pallet.script-test :only [is= is-true testing-script]]
    [pallet.stevedore :only [script with-script-language]]))
@@ -45,12 +44,11 @@
   (testing "openjdk"
     (is (= {:packages ["openjdk-6-jre"], :install-strategy :packages
             :vendor :openjdk :version [6] :components #{:jre}}
-           (->
-            ((#'pallet.crate.java/settings-map
-              {:vendor :openjdk :components #{:jre} :version [6]})
-             (build-session
-              {:server {:image {:os-family :ubuntu :os-version "10.10"}}}))
-            first))))
+           (with-session
+               (build-session
+                {:server {:image {:os-family :ubuntu :os-version "10.10"}}})
+             (#'pallet.crate.java/settings-map
+              {:vendor :openjdk :components #{:jre} :version [6]})))))
 
   (testing "oracle"
     (is (= {:packages ["sun-java6-bin" "sun-java6-jdk"],
@@ -61,13 +59,12 @@
             :install-strategy :debs
             :debs "some.tar.gz"
             :vendor :oracle :version [6] :components #{:jdk}}
-           (->
-            ((#'pallet.crate.java/settings-map
+           (with-session
+               (build-session
+                {:server {:image {:os-family :ubuntu :os-version "10.10"}}})
+             (#'pallet.crate.java/settings-map
               {:vendor :oracle :components #{:jdk} :version [6]
-               :debs "some.tar.gz"})
-             (build-session
-              {:server {:image {:os-family :ubuntu :os-version "10.10"}}}))
-            first)))))
+               :debs "some.tar.gz"}))))))
 
 (comment
   ;; TODO fix these tests
@@ -81,7 +78,7 @@
                 (phase-pipeline set-environment {}
                   (wrap-pipeline p-when
                     (with-phase-context
-                      {:msg "pipeline-when" :kw :pipeline-when})
+                      {:msg "plan-when" :kw :plan-when})
                     (system-environment
                      "java"
                      {"JAVA_HOME" (script (~java-home))}))))))
@@ -98,7 +95,7 @@
                 (phase-pipeline set-environment {}
                   (wrap-pipeline p-when
                     (with-phase-context
-                      {:msg "pipeline-when" :kw :pipeline-when})
+                      {:msg "plan-when" :kw :plan-when})
                     (system-environment
                      "java"
                      {"JAVA_HOME" (script (~java-home))}))))))
@@ -138,7 +135,7 @@
                           (automated-admin-user))
              :settings (plan-fn
                          (java-settings {:vendor :openjdk})
-                         (pipeline-when has-debs?
+                         (plan-when has-debs?
                            (java-settings {:vendor :oracle
                                            :version "6"
                                            :components #{:jdk}
@@ -147,9 +144,9 @@
                          (java-settings {:vendor :oracle :version "7"
                                          :components #{:jdk}
                                          :instance-id :oracle-7}))
-             :configure (install-java)
+             :configure (plan-fn (install-java))
              :configure2 (plan-fn
-                           (pipeline-when has-debs?
+                           (plan-when has-debs?
                              (install-java :instance-id :oracle-6)))
              :configure3 (plan-fn
                            (install-java :instance-id :oracle-7))
@@ -182,18 +179,17 @@
 (deftest centos-live-test
   (test-for [image (filter-images (images) rh)]
     (logging/infof "testing %s" (pr-str image))
-    (test-nodes
-        [compute node-map node-types]
-        {:java
-         {:image image
-          :count 1
-          :phases
-          {:bootstrap (plan-fn
-                        (minimal-packages)
-                        (package-manager :update)
-                        (automated-admin-user))
-           :settings (plan-fn
-                       [is-64bit (is-64bit?)]
+    (test-nodes [compute node-map node-types]
+      {:java
+       {:image image
+        :count 1
+        :phases
+        {:bootstrap (plan-fn
+                      (minimal-packages)
+                      (package-manager :update)
+                      (automated-admin-user))
+         :settings (plan-fn
+                     (let [is-64bit (is-64bit?)]
                        (java-settings
                         {:vendor :sun
                          :rpm {:local-file
@@ -201,20 +197,20 @@
                                 "./artifacts/"
                                 (if is-64bit
                                   "jdk-6u23-linux-x64-rpm.bin"
-                                  "jdk-6u24-linux-i586-rpm.bin"))}}))
-           :configure (install-java)
-           :verify (plan-fn
-                     (exec-checked-script
-                      "check java installed"
-                      ("java" -version))
-                     (exec-checked-script
-                      "check java installed under java home"
-                      (file-exists? (quoted (str (~java-home) "/bin/java"))))
-                     (exec-checked-script
-                      "check javac installed under jdk home"
-                      (file-exists? (str (~jdk-home) "/bin/javac")))
-                     (exec-checked-script
-                      "check JAVA_HOME set to jdk home"
-                      (source "/etc/profile.d/java.sh")
-                      (= (~jdk-home) @JAVA_HOME)))}}}
-        @(lift (val (first node-types)) :phase :verify :compute compute))))
+                                  "jdk-6u24-linux-i586-rpm.bin"))}})))
+         :configure (plan-fn (install-java))
+         :verify (plan-fn
+                   (exec-checked-script
+                    "check java installed"
+                    ("java" -version))
+                   (exec-checked-script
+                    "check java installed under java home"
+                    (file-exists? (quoted (str (~java-home) "/bin/java"))))
+                   (exec-checked-script
+                    "check javac installed under jdk home"
+                    (file-exists? (str (~jdk-home) "/bin/javac")))
+                   (exec-checked-script
+                    "check JAVA_HOME set to jdk home"
+                    (source "/etc/profile.d/java.sh")
+                    (= (~jdk-home) @JAVA_HOME)))}}}
+      @(lift (val (first node-types)) :phase :verify :compute compute))))

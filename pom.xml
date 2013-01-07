@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.cloudhoist</groupId>
     <artifactId>pallet-crate-pom</artifactId>
-    <version>0.8.0-alpha.1</version>
+    <version>0.8.0-SNAPSHOT</version>
     <relativePath />
   </parent>
   <artifactId>java</artifactId>
@@ -16,7 +16,28 @@
     <url>https://github.com/pallet/java-crate</url>
   </scm>
 
+  <dependencies>
+    <dependency>
+      <groupId>vmfest</groupId>
+      <artifactId>vmfest</artifactId>
+      <version>${vmfest.version}</version>
+      <!-- <scope>test</scope> -->
+    </dependency>
+    <dependency>
+      <groupId>org.clojars.tbatchelli</groupId>
+      <artifactId>vboxjws</artifactId>
+      <version>4.2.4</version>
+      <!-- <scope>test</scope> -->
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>1.6.6</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
   <properties>
     <clojure.version>1.4.0</clojure.version>
+    <vmfest.version>0.3.0-SNAPSHOT</vmfest.version>
   </properties>
 </project>
