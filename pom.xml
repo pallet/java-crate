@@ -21,13 +21,13 @@
       <groupId>vmfest</groupId>
       <artifactId>vmfest</artifactId>
       <version>${vmfest.version}</version>
-      <!-- <scope>test</scope> -->
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.clojars.tbatchelli</groupId>
       <artifactId>vboxjws</artifactId>
       <version>4.2.4</version>
-      <!-- <scope>test</scope> -->
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -38,6 +38,6 @@
   </dependencies>
   <properties>
     <clojure.version>1.4.0</clojure.version>
-    <vmfest.version>0.3.0-SNAPSHOT</vmfest.version>
+    <vmfest.version>0.3.0-alpha.1</vmfest.version>
   </properties>
 </project>
