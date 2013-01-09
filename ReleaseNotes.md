@@ -1,5 +1,9 @@
 # Release notes
 
+## java-0.8.0-alpha.2
+
+- Update for var based plan-fn's (pallet 0.8.0-alpha.8)
+
 ## java-0.8.0-alpha.1
 
 - Initial release for pallet 0.8.0-alpha.6
