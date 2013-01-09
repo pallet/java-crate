@@ -8,7 +8,7 @@
     <relativePath />
   </parent>
   <artifactId>java</artifactId>
-  <version>0.8.0-alpha.2</version>
+  <version>bash ../finish-crate-release.sh 0.8.0-SNAPSHOT</version>
 
   <scm>
     <connection>scm:git:git://github.com/pallet/java-crate.git</connection>
