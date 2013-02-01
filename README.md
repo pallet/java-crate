@@ -2,7 +2,7 @@
 
 This a crate to install and run java via [Pallet](http://pallet.github.com/pallet).
 
-[Release Notes](https://github.com/pallet/java-crate/blob/master/ReleaseNotes.md)
+[Release Notes](ReleaseNotes.md)
 
 ## Server Spec
 
