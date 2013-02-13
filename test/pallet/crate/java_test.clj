@@ -18,7 +18,7 @@
            package package-manager remote-file plan-when]]
    [pallet.context :only [with-phase-context]]
    [pallet.core.session :only [with-session]]
-   [pallet.crate :only [is-64bit?]]
+   [pallet.crate :only [is-64bit? phase-context]]
    [pallet.crate.automated-admin-user :only [automated-admin-user]]
    [pallet.crate.environment :only [system-environment]]
    [pallet.live-test
@@ -66,43 +66,18 @@
               {:vendor :oracle :components #{:jdk} :version [6]
                :debs "some.tar.gz"}))))))
 
-(comment
-  ;; TODO fix these tests
-  (deftest java-openjdk-test
-    (is (= (first
-            (with-phase-context {:msg "install-java" :kw :install-java}
-              (build-actions {}
-                (phase-pipeline install {}
-                  (package "openjdk-6-jre"))
-                (exec-script "")        ; an extra newline, for some reason
-                (phase-pipeline set-environment {}
-                  (wrap-pipeline p-when
-                    (with-phase-context
-                      {:msg "plan-when" :kw :plan-when})
-                    (system-environment
-                     "java"
-                     {"JAVA_HOME" (script (~java-home))}))))))
-           (first
-            (build-actions {}
-              (java-settings {:vendor :openjdk :components #{:jre}})
-              (install-java)))))
-    (is (= (first
-            (with-phase-context {:msg "install-java" :kw :install-java}
-              (build-actions {:server {:image {} :packager :pacman}}
-                (phase-pipeline install {}
-                  (package "openjdk-6-jre"))
-                ;; (exec-script "") ; an extra newline, for some reason
-                (phase-pipeline set-environment {}
-                  (wrap-pipeline p-when
-                    (with-phase-context
-                      {:msg "plan-when" :kw :plan-when})
-                    (system-environment
-                     "java"
-                     {"JAVA_HOME" (script (~java-home))}))))))
-           (first
-            (build-actions {:server {:image {} :packager :pacman}}
-              (java-settings {:vendor :openjdk :components #{:jre}})
-              (install-java)))))))
+
+(deftest java-openjdk-test
+  (is
+   (first
+    (build-actions {}
+      (java-settings {:vendor :openjdk :components #{:jre}})
+      (install-java))))
+  (is
+   (first
+    (build-actions {:server {:image {} :packager :pacman}}
+      (java-settings {:vendor :openjdk :components #{:jre}})
+      (install-java)))))
 
 
 (deftest invoke-test
