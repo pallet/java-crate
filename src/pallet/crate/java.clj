@@ -42,7 +42,7 @@
   ~(fragment
     @("dirname"
       @("dirname"
-        @(pipe ("update-alternatives" --list java) (head -n 1))))))
+        @(pipe ("update-alternatives" --list java) ("head" -n 1))))))
 (defimpl java-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))
 
@@ -54,14 +54,16 @@
   ~(fragment
     @("dirname"
       @("dirname"
-        @(pipe ("update-alternatives" --list javac) (head -n 1))))))
+        @(pipe ("update-alternatives" --list javac) ("head" -n 1))))))
 (defimpl jdk-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))
 
 (defscript jre-lib-security [])
 (defimpl jre-lib-security :default []
   ~(fragment
-    (str @(update-java-alternatives -l "|" cut "-d ' '" -f 3 "|" head -1)
+    (str @(pipe ("update-java-alternatives" -l)
+                ("cut" "-d ' '" -f 3)
+                ("head" -1))
          "/jre/lib/security/")))
 
 ;;; ## download install
@@ -370,7 +372,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
       (exec-checked-script
        (format "Unpack java rpm %s" "java.rpm.bin")
        (~lib/heredoc "java-bin-resp" "A\n\n" {})
-       (chmod "+x" "java.rpm.bin")
+       ("chmod" "+x" "java.rpm.bin")
        ("./java.rpm.bin" < "java-bin-resp")))))
 
 (defplan install-java

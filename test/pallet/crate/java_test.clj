@@ -24,6 +24,7 @@
    [pallet.live-test
     :only [exclude-images filter-images images test-for test-nodes]]
    [pallet.script :only [with-script-context]]
+   [pallet.script.lib :only [package-manager-non-interactive]]
    [pallet.script-test :only [is= is-true testing-script]]
    [pallet.stevedore :only [script with-script-language]]))
 
@@ -186,6 +187,6 @@
                     (file-exists? (str (~jdk-home) "/bin/javac")))
                    (exec-checked-script
                     "check JAVA_HOME set to jdk home"
-                    (source "/etc/profile.d/java.sh")
+                    ("source" "/etc/profile.d/java.sh")
                     (= (~jdk-home) @JAVA_HOME)))}}}
       @(lift (val (first node-types)) :phase :verify :compute compute))))
