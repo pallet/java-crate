@@ -1,0 +1,133 @@
+<html lang="en">
+  <head>
+    <title>pallet.crate.java documentation</title>
+    <link href="css/default.css" type="text/css" rel="stylesheet" />
+    <link href="css/codox-md.css" type="text/css" rel="stylesheet" />
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/page_effects.js"></script>
+  </head>
+  <body>
+    <header>
+      <div id="header">
+        <h1 class="project-title">Java-crate 0.8.0-SNAPSHOT API documentation</h1>
+      </div>
+    </header>
+    <navigation>
+      <div id="namespaces" class="sidebar">
+        <h3>Namespaces</h3>
+        <ul class="ns-links">
+          <li class="ns-list"><a class="ns-link ns-name" href="pallet.crate.java.html">pallet.crate.java</a></li>
+        </ul>
+      </div>
+      <div id="vars" class="sidebar">
+        <h3>Public Vars</h3>
+        <ul class="ns-var-links">
+          <li class="ns-var-list"><a class="ns-var-link ns-var-name" href="pallet.crate.java.html#var-download-install">download-install</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="pallet.crate.java.html#var-install-java">install-java</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="pallet.crate.java.html#var-java">java</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="pallet.crate.java.html#var-java-settings">java-settings</a></li><li class="ns-var-list"><a class="ns-var-link ns-var-name" href="pallet.crate.java.html#var-jce-policy-file">jce-policy-file</a></li>
+        </ul>
+      </div>
+    </navigation>
+    <article>
+      <div id="content" class="namespace-docs">
+        <h2 class="namespace-title">pallet.crate.java documentation</h2>
+        <div class="doc"><p>Crates for java installation and configuration.</p>
+
+<p>Sun Java installation on CentOS requires use of Oracle rpm's. Download from
+http://www.oracle.com/technetwork/java/javase/downloads/index.html and get
+the .rpm.bin file onto the node with remote-file.  Then pass the location of
+the rpm.bin file on the node using the :rpm-bin option. The rpm will be
+installed.</p>
+</div>
+        <div class="ns-vars">
+          <div class="public">
+            <h3><a id="var-download-install" class="source var-name" href="https://github.com/pallet/java-crate/blob/develop/src/pallet/crate/java.clj#L70">download-install</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[session settings]</div>
+            
+            
+            <div class="doc"><p>Download and unpack a jdk tar.gz file</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-install-java" class="source var-name" href="https://github.com/pallet/java-crate/blob/develop/src/pallet/crate/java.clj#L378">install-java</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[&amp; {:keys [instance-id]}]</div>
+            
+            
+            <div class="doc"><p>Install java. OpenJDK installs from system packages by default.</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-java" class="source var-name" href="https://github.com/pallet/java-crate/blob/develop/src/pallet/crate/java.clj#L401">java</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[settings]</div>
+            
+            
+            <div class="doc"><p>Returns a service-spec for installing java.</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-java-settings" class="source var-name" href="https://github.com/pallet/java-crate/blob/develop/src/pallet/crate/java.clj#L296">java-settings</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[{:keys [vendor version components instance-id], :as settings}]</div>
+            
+            
+            <div class="doc"><p>Capture settings for java</p>
+
+<ul>
+<li>:vendor one of #{:openjdk :oracle :sun}</li>
+<li><p>:components a set of #{:jdk :jre}</p></li>
+<li><p>:package installs from packages</p></li>
+<li><p>:rpm takes a map of remote-file options specifying a self-extracting rpm file
+to install</p></li>
+<li><p>:debs takes a map of remote-directory options specifying an archive of deb
+files to install. The archive should have no top level directory.</p></li>
+<li><p>:package-source takes a map of options to package-source. When used
+with :debs, specifies the local path for the deb files to be expanded to.
+should specify a :name key.</p></li>
+<li><p>:download takes a map of options to remote-file</p></li>
+</ul>
+
+<p>The default for openjdk is to install from system packages.</p>
+
+<p>The story for Oracle JDK is way more complicated.</p>
+
+<h2>RPM based systems</h2>
+
+<p>Download the rpm.bin file, and pass it in the :rpm option.</p>
+
+<h2>Apt based systems</h2>
+
+<p>Since Oracle don't provide debs, this gets complex.</p>
+
+<h3>JDK 6</h3>
+
+<p>Build packages using https://github.com/rraptorr/sun-java6, possibly via
+https://github.com/palletops/java-package-builder. Pass the resulting debs as a
+tar file to :debs.</p>
+
+<h3>JDK 7</h3>
+
+<p>Use the webupd8.org ppa. This is the default</p>
+
+<p>http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html</p>
+</div>
+          </div><div class="public">
+            <h3><a id="var-jce-policy-file" class="source var-name" href="https://github.com/pallet/java-crate/blob/develop/src/pallet/crate/java.clj#L386">jce-policy-file</a></h3>
+            <h4 class="var-type fn" id="var-type">fn</h4>
+            <div class="usage">[filename &amp; {:as options}]</div>
+            
+            
+            <div class="doc"><p>Installs a local JCE policy jar at the given path in the remote JAVA_HOME's
+lib/security directory, enabling the use of "unlimited strength" crypto
+implementations. Options are as for remote-file.</p>
+
+<p>e.g. (jce-policy-file
+       "local<em>policy.jar" :local-file "path/to/local</em>policy.jar")</p>
+
+<p>Note this only intended to work for ubuntu/aptitude-managed systems and Sun
+JDKs right now.</p>
+</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </body>
+
+</html>
