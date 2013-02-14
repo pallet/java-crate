@@ -1,5 +1,15 @@
 # Release notes
 
+## java-0.8.0-beta.1
+
+- Update for pallet 0.8.0-beta.1
+  Replace symbols in function position with strings, in stevedore
+  expressions.
+
+- Use leiningen instead of maven
+  Moves the crate build to leiningen.  Adds a release script and a logback
+  configuration.
+
 ## java-0.8.0-alpha.2
 
 - Update for var based plan-fn's (pallet 0.8.0-alpha.8)
