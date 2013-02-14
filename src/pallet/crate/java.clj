@@ -21,7 +21,7 @@
    [pallet.crate :only [defplan assoc-settings get-settings defmethod-plan]]
    [pallet.crate-install :only [install]]
    [pallet.crate.environment :only [system-environment]]
-   [pallet.stevedore :only [script]]
+   [pallet.stevedore :only [script fragment]]
    [pallet.script :only [defimpl defscript]]
    [pallet.utils :only [apply-map]]
    [pallet.version-dispatch
@@ -37,28 +37,34 @@
 ;;; ## Script
 (defscript java-home [])
 (defimpl java-home :default []
-  @("dirname" @("dirname" @("readlink" -f @("which" java)))))
+  ~(fragment @("dirname" @("dirname" @("readlink" -f @("which" java))))))
 (defimpl java-home [#{:aptitude :apt}] []
-  @("dirname"
+  ~(fragment
     @("dirname"
-      @(pipe ("update-alternatives" --list java) (head -n 1)))))
+      @("dirname"
+        @(pipe ("update-alternatives" --list java) ("head" -n 1))))))
 (defimpl java-home [#{:darwin :os-x}] []
-   @JAVA_HOME)
+  ~(fragment @JAVA_HOME))
 
 (defscript jdk-home [])
 (defimpl jdk-home :default []
-  @("dirname" @("dirname" @("readlink" -f @("which" javac)))))
+  ~(fragment
+    @("dirname" @("dirname" @("readlink" -f @("which" javac))))))
 (defimpl jdk-home [#{:aptitude :apt}] []
-  @("dirname"
+  ~(fragment
     @("dirname"
-      @(pipe ("update-alternatives" --list javac) (head -n 1)))))
+      @("dirname"
+        @(pipe ("update-alternatives" --list javac) ("head" -n 1))))))
 (defimpl jdk-home [#{:darwin :os-x}] []
-   @JAVA_HOME)
+  ~(fragment @JAVA_HOME))
 
 (defscript jre-lib-security [])
 (defimpl jre-lib-security :default []
-  (str @(update-java-alternatives -l "|" cut "-d ' '" -f 3 "|" head -1)
-       "/jre/lib/security/"))
+  ~(fragment
+    (str @(pipe ("update-java-alternatives" -l)
+                ("cut" "-d ' '" -f 3)
+                ("head" -1))
+         "/jre/lib/security/")))
 
 ;;; ## download install
 (defn download-install
@@ -344,10 +350,10 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   (debugf "set-environment for java components %s" components)
   (when (:jdk components)
     (system-environment
-     "java" {"JAVA_HOME" (script (~jdk-home))}))
+     "java" {"JAVA_HOME" (fragment (~jdk-home))}))
   (when (and (:jre components) (not (:jdk components)))
     (system-environment
-     "java" {"JAVA_HOME" (script (~java-home))})))
+     "java" {"JAVA_HOME" (fragment (~java-home))})))
 
 ;;; # Install
 
@@ -366,7 +372,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
       (exec-checked-script
        (format "Unpack java rpm %s" "java.rpm.bin")
        (~lib/heredoc "java-bin-resp" "A\n\n" {})
-       (chmod "+x" "java.rpm.bin")
+       ("chmod" "+x" "java.rpm.bin")
        ("./java.rpm.bin" < "java-bin-resp")))))
 
 (defplan install-java
