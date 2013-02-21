@@ -11,8 +11,13 @@ This a crate to install and run java via
 ## Server Spec
 
 The java crate defines the `java` function, that takes a settings map and
-returns a server-spec for installing java.
+returns a server-spec for installing java.  You can use this in a `group-spec`
+or `server-spec`.
 
+```clj
+(group-spec "my-node-with-java"
+  :extends [(pallet.crate.java/java {})])
+```
 
 ## Settings
 
