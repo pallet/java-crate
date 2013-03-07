@@ -11,15 +11,15 @@
 ;;http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
 
   (:require
-   [pallet.script.lib :as lib])
+   [pallet.script.lib :as lib]
+   [pallet.crate-install :as crate-install])
   (:use
    [clojure.tools.logging :only [debugf]]
    [pallet.action :only [with-action-options]]
    [pallet.actions :only [exec-checked-script remote-directory remote-file]]
-   [pallet.api :only [plan-fn server-spec]]
+   [pallet.api :only [plan-fn] :as api]
    [pallet.compute :only [os-hierarchy]]
    [pallet.crate :only [defplan assoc-settings get-settings defmethod-plan]]
-   [pallet.crate-install :only [install]]
    [pallet.crate.environment :only [system-environment]]
    [pallet.stevedore :only [script fragment]]
    [pallet.script :only [defimpl defscript]]
@@ -158,6 +158,12 @@
     [os os-version version components]
   [(str "sun-java" (version-string version))])
 
+;; java should be auto installed as required
+(defmethod-version
+    oracle-packages {:os :os-x}
+    [os os-version version components]
+  [])
+
 ;;; ## Oracle java
 ;;; Based on supplied settings, decide which install strategy we are using
 ;;; for oracle java.
@@ -255,6 +261,10 @@
      :else (throw
             (Exception. "No install method selected for Oracle java 6")))))
 
+(defmethod-version-plan
+    oracle-java-settings {:os :os-x}
+    [os os-version version settings]
+  (assoc settings :install-strategy ::no-op))
 
 ;;; ## OpenJDK java
 ;;; Based on supplied settings, decide which install strategy we are using
@@ -283,6 +293,11 @@
                       os os-version version
                       (:components settings)))))
 
+(defmethod-version-plan
+    openjdk-java-settings {:os :os-x}
+    [os os-version version settings]
+  (assoc settings :install-strategy ::no-op))
+
 ;;; ## Settings
 (defn- settings-map
   "Dispatch to either openjdk or oracle settings"
@@ -293,7 +308,7 @@
       (openjdk-java-settings (:version settings) settings)
       (oracle-java-settings (:version settings) settings))))
 
-(defplan java-settings
+(defplan settings
   "Capture settings for java
 
 - :vendor one of #{:openjdk :oracle :sun}
@@ -358,7 +373,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
 ;;; # Install
 
 ;;; custom install method for oracle rpm.bin method
-(defmethod-plan install ::rpm-bin
+(defmethod-plan crate-install/install ::rpm-bin
   [facility instance-id]
   (let [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
     (with-action-options {:action-id ::upload-rpm-bin
@@ -375,12 +390,29 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
        ("chmod" "+x" "java.rpm.bin")
        ("./java.rpm.bin" < "java-bin-resp")))))
 
-(defplan install-java
+(defmethod-plan crate-install/install ::no-op
+  [facility instance-id]
+  (let [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
+    (with-action-options {:action-id ::upload-rpm-bin
+                          :always-before ::unpack-sun-rpm}
+      (apply-map
+       remote-file "java.rpm.bin"
+       (merge
+        {:local-file-options {:always-before #{`unpack-sun-rpm}} :mode "755"}
+        rpm)))
+    (with-action-options {:action-id ::unpack-sun-rpm}
+      (exec-checked-script
+       (format "Unpack java rpm %s" "java.rpm.bin")
+       (~lib/heredoc "java-bin-resp" "A\n\n" {})
+       ("chmod" "+x" "java.rpm.bin")
+       ("./java.rpm.bin" < "java-bin-resp")))))
+
+(defplan install
   "Install java. OpenJDK installs from system packages by default."
   [& {:keys [instance-id]}]
   (let [settings (get-settings
                   :java {:instance-id instance-id :default ::no-settings})]
-    (install :java instance-id)
+    (crate-install/install :java instance-id)
     (set-environment (:components settings))))
 
 (defplan jce-policy-file
@@ -398,9 +430,9 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
     (script (str (jre-lib-security) ~filename))
     (merge {:owner "root" :group "root" :mode 644} options)))
 
-(defn java
+(defn server-spec
   "Returns a service-spec for installing java."
   [settings]
-  (server-spec
-   :phases {:settings (plan-fn (java-settings settings))
-            :configure (plan-fn (install-java))}))
+  (api/server-spec
+   :phases {:settings (plan-fn (pallet.crate.java/settings settings))
+            :configure (plan-fn (install))}))

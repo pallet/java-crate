@@ -1,5 +1,5 @@
 (ns pallet.crate.java-test
-  (:use pallet.crate.java)
+  (:require [pallet.crate.java :as java])
   (:require
    [clojure.java.io :as io]
    [clojure.tools.logging :as logging]
@@ -72,25 +72,25 @@
   (is
    (first
     (build-actions {}
-      (java-settings {:vendor :openjdk :components #{:jre}})
-      (install-java))))
+      (java/settings {:vendor :openjdk :components #{:jre}})
+      (java/install))))
   (is
    (first
     (build-actions {:server {:image {} :packager :pacman}}
-      (java-settings {:vendor :openjdk :components #{:jre}})
-      (install-java)))))
+      (java/settings {:vendor :openjdk :components #{:jre}})
+      (java/install)))))
 
 
 (deftest invoke-test
   (is
    (build-actions
     {}
-    (java-settings {:vendor :openjdk :components #{:jdk}})
-    (install-java)
-    (jce-policy-file "f" :content ""))))
+    (java/settings {:vendor :openjdk :components #{:jdk}})
+    (java/install)
+    (java/jce-policy-file "f" :content ""))))
 
 (deftest spec-test
-  (is (map? (java {:vendor :openjdk}))))
+  (is (map? (java/server-spec {:vendor :openjdk}))))
 
 (def rh [{:os-family :centos} {:os-family :fedora} {:os-family :rhel}])
 
@@ -110,22 +110,22 @@
                           (package-manager :update)
                           (automated-admin-user))
              :settings (plan-fn
-                         (java-settings {:vendor :openjdk})
+                         (java/settings {:vendor :openjdk})
                          (plan-when has-debs?
-                           (java-settings {:vendor :oracle
+                           (java/settings {:vendor :oracle
                                            :version "6"
                                            :components #{:jdk}
                                            :debs {:local-file (.getPath file)}
                                            :instance-id :oracle-6}))
-                         (java-settings {:vendor :oracle :version "7"
+                         (java/settings {:vendor :oracle :version "7"
                                          :components #{:jdk}
                                          :instance-id :oracle-7}))
-             :configure (plan-fn (install-java))
+             :configure (plan-fn (java/install))
              :configure2 (plan-fn
                            (plan-when has-debs?
-                             (install-java :instance-id :oracle-6)))
+                             (java/install :instance-id :oracle-6)))
              :configure3 (plan-fn
-                           (install-java :instance-id :oracle-7))
+                           (java/install :instance-id :oracle-7))
              :verify (plan-fn
                        (exec-script*
                         (testing-script "Java install"
@@ -134,10 +134,10 @@
                                      ("java" --version))
                                    "Verify java is installed")
                           (is-true
-                           (file-exists? (str (~java-home) "/bin/java"))
+                           (file-exists? (str (java/java-home) "/bin/java"))
                            "Verify that java is installed under java home")
                           (is-true
-                           (file-exists? (str (~jdk-home) "/bin/javac"))
+                           (file-exists? (str (java/jdk-home) "/bin/javac"))
                            "Verify javac is installed under jdk home")
                           "echo JAVA_HOME is ${JAVA_HOME}"
                           ;; for some reason JAVA_HOME isn't getting set,
@@ -166,7 +166,7 @@
                       (automated-admin-user))
          :settings (plan-fn
                      (let [is-64bit (is-64bit?)]
-                       (java-settings
+                       (java/settings
                         {:vendor :sun
                          :rpm {:local-file
                                (str
@@ -174,19 +174,19 @@
                                 (if is-64bit
                                   "jdk-6u23-linux-x64-rpm.bin"
                                   "jdk-6u24-linux-i586-rpm.bin"))}})))
-         :configure (plan-fn (install-java))
+         :configure (plan-fn (java/install))
          :verify (plan-fn
                    (exec-checked-script
                     "check java installed"
                     ("java" -version))
                    (exec-checked-script
                     "check java installed under java home"
-                    (file-exists? (quoted (str (~java-home) "/bin/java"))))
+                    (file-exists? (quoted (str (java/java-home) "/bin/java"))))
                    (exec-checked-script
                     "check javac installed under jdk home"
-                    (file-exists? (str (~jdk-home) "/bin/javac")))
+                    (file-exists? (str (java/jdk-home) "/bin/javac")))
                    (exec-checked-script
                     "check JAVA_HOME set to jdk home"
                     ("source" "/etc/profile.d/java.sh")
-                    (= (~jdk-home) @JAVA_HOME)))}}}
+                    (= (java/jdk-home) @JAVA_HOME)))}}}
       @(lift (val (first node-types)) :phase :verify :compute compute))))
