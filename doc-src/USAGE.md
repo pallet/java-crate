@@ -1,12 +1,12 @@
 ## Server Spec
 
-The java crate defines the `java` function, that takes a settings map and
+The java crate defines the `server-spec` function, that takes a settings map and
 returns a server-spec for installing java.  You can use this in a `group-spec`
 or `server-spec`.
 
 ```clj
 (group-spec "my-node-with-java"
-  :extends [(pallet.crate.java/java {})])
+  :extends [(pallet.crate.java/server-spec {})])
 ```
 
 ## Settings
@@ -39,3 +39,6 @@ to install
 `:debs`
 takes a map of remote-directory options specifying an archive of deb files to
 install. The archive should have no top level directory.
+
+`:local-file`, `:url`, etc
+takes the location of a tar file containing a java binary distribution

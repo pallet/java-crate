@@ -2,8 +2,8 @@ target
 doc
 logs
 checkouts
-/doc-src/INTRO.md
-/doc-src/VERSION.md
+doc-src/INTRO.md
+doc-src/VERSIONS.md
 pom.xml
 pom.xml.asc
 *.jar

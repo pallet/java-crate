@@ -12,7 +12,8 @@
    [pallet.script.lib :as lib]
    [clojure.tools.logging :refer [debugf]]
    [pallet.action :refer [with-action-options]]
-   [pallet.actions :refer [exec-checked-script remote-directory remote-file]]
+   [pallet.actions :refer [content-options exec-checked-script
+                           remote-directory remote-file]]
    [pallet.api :refer [plan-fn]]
    [pallet.compute :refer [os-hierarchy]]
    [pallet.crate :refer [assoc-settings defmethod-plan defplan get-settings]]
@@ -159,6 +160,10 @@
     [os os-version version components]
   [])
 
+
+(defn local-install-dir [version]
+  (str "/usr/local/java-" (version-string version)))
+
 ;;; ## Oracle java
 ;;; Based on supplied settings, decide which install strategy we are using
 ;;; for oracle java.
@@ -171,6 +176,12 @@
   (cond
    (:install-strategy settings) settings
    (:rpm settings) (assoc settings :install-strategy ::rpm-bin)
+
+   (first (filter (set content-options) (keys settings)))
+   (-> settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
+
    (:package-source settings) (assoc settings
                                 :install-strategy :package-source
                                 :packages (oracle-packages
@@ -208,6 +219,11 @@
       (update-in
        [:packages]
        #(or % (oracle-packages os os-version version (:components settings)))))
+
+     (first (filter (set content-options) (keys settings)))
+     (-> settings
+         (assoc :install-strategy ::tarfile)
+         (update-in [:install-dir] #(or % (local-install-dir version))))
 
      :else
      (->
@@ -253,6 +269,11 @@
        [:packages]
        #(or % (oracle-packages os os-version version (:components settings)))))
 
+     (first (filter (set content-options) (keys settings)))
+     (-> settings
+         (assoc :install-strategy ::tarfile)
+         (update-in [:install-dir] #(or % (local-install-dir version))))
+
      :else (throw
             (Exception. "No install method selected for Oracle java 6")))))
 
@@ -271,6 +292,12 @@
     [os os-version version settings]
   (cond
    (:install-strategy settings) settings
+
+   (first (filter (set content-options) (keys settings)))
+   (-> settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
+
    :else (assoc settings
            :install-strategy :packages
            :packages (openjdk-packages
@@ -282,6 +309,12 @@
     [os os-version version settings]
   (cond
    (:install-strategy settings) settings
+
+   (first (filter (set content-options) (keys settings)))
+   (-> settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
+
    :else (assoc settings
            :install-strategy :packages
            :packages (openjdk-packages
@@ -385,6 +418,35 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
        ("chmod" "+x" "java.rpm.bin")
        ("./java.rpm.bin" < "java-bin-resp")))))
 
+(defmethod-plan crate-install/install ::tarfile
+  [facility instance-id]
+  (let [{:keys [install-dir] :as settings}
+        (get-settings facility {:instance-id instance-id})]
+    (apply-map
+     remote-directory install-dir
+     :strip-components 0
+     (select-keys settings content-options))
+    (exec-checked-script
+     "Update java alternatives"
+     ;; Add an alternaive
+     ("update-alternatives"
+      "--install" "/usr/bin/java" "java"
+      (str ~install-dir "/jdk*/bin/java") 1)
+     ("update-alternatives"
+      "--install" "/usr/bin/javac" "javac"
+      (str ~install-dir "/jdk*/bin/javac") 1)
+     ("update-alternatives"
+      "--install" "/usr/bin/javaws" "javaws"
+      (str ~install-dir "/jdk*/bin/javaws") 1)
+
+     ;; Use the alternative
+     ("update-alternatives"
+      "--set" "java" (str ~install-dir "/jdk*/bin/java"))
+     ("update-alternatives"
+      "--set" "javac" (str ~install-dir "/jdk*/bin/javac"))
+     ("update-alternatives"
+      "--set" "javaws" (str ~install-dir "/jdk*/bin/javaws")))))
+
 (defmethod-plan crate-install/install ::no-op
   [facility instance-id]
   (let [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
@@ -407,6 +469,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   [& {:keys [instance-id]}]
   (let [settings (get-settings
                   :java {:instance-id instance-id :default ::no-settings})]
+    (debugf "install settings %s" settings)
     (crate-install/install :java instance-id)
     (set-environment (:components settings))))
 
@@ -427,7 +490,8 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
 
 (defn server-spec
   "Returns a service-spec for installing java."
-  [settings]
+  [settings & {:keys [instance-id] :as options}]
   (api/server-spec
-   :phases {:settings (plan-fn (pallet.crate.java/settings settings))
+   :phases {:settings (plan-fn
+                        (apply-map pallet.crate.java/settings settings options))
             :configure (plan-fn (install))}))

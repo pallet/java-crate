@@ -83,6 +83,9 @@
 (deftest spec-test
   (is (map? (java/server-spec {:vendor :openjdk}))))
 
+(def test-spec-from-tarfile
+  (java/server-spec {:local-file "artifacts/jdk-7u17-linux-x64.tar.gz"}))
+
 (def rh [{:os-family :centos} {:os-family :fedora} {:os-family :rhel}])
 
 (deftest live-test
