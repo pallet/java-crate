@@ -6,29 +6,24 @@
    the .rpm.bin file onto the node with remote-file.  Then pass the location of
    the rpm.bin file on the node using the :rpm-bin option. The rpm will be
    installed."
-
-;; Add
-;;http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
-
   (:require
+   [pallet.api :as api]
+   [pallet.crate-install :as crate-install]
    [pallet.script.lib :as lib]
-   [pallet.crate-install :as crate-install])
-  (:use
-   [clojure.tools.logging :only [debugf]]
-   [pallet.action :only [with-action-options]]
-   [pallet.actions :only [exec-checked-script remote-directory remote-file]]
-   [pallet.api :only [plan-fn] :as api]
-   [pallet.compute :only [os-hierarchy]]
-   [pallet.crate :only [defplan assoc-settings get-settings defmethod-plan]]
-   [pallet.crate.environment :only [system-environment]]
-   [pallet.stevedore :only [script fragment]]
-   [pallet.script :only [defimpl defscript]]
-   [pallet.utils :only [apply-map]]
+   [clojure.tools.logging :refer [debugf]]
+   [pallet.action :refer [with-action-options]]
+   [pallet.actions :refer [exec-checked-script remote-directory remote-file]]
+   [pallet.api :refer [plan-fn]]
+   [pallet.compute :refer [os-hierarchy]]
+   [pallet.crate :refer [assoc-settings defmethod-plan defplan get-settings]]
+   [pallet.crate.environment :refer [system-environment]]
+   [pallet.script :refer [defimpl defscript]]
+   [pallet.stevedore :refer [fragment script]]
+   [pallet.utils :refer [apply-map]]
    [pallet.version-dispatch
-    :only [defmulti-version-plan defmulti-version
-           defmethod-version-plan defmethod-version
-           os-map os-map-lookup]]
-   [pallet.versions :only [version-string]]))
+    :refer [defmethod-version defmethod-version-plan defmulti-version
+            defmulti-version-plan os-map os-map-lookup]]
+   [pallet.versions :refer [version-string]]))
 
 (def vendor-keywords #{:openjdk :sun :oracle})
 (def component-keywords #{:jdk :jre :bin})

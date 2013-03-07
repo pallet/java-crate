@@ -1,32 +1,23 @@
 (ns pallet.crate.java-test
-  (:require [pallet.crate.java :as java])
   (:require
    [clojure.java.io :as io]
+   [clojure.test :refer :all]
    [clojure.tools.logging :as logging]
-   [pallet.core :as core]
-   [pallet.live-test :as live-test]
-   [pallet.script :as script]
-   [pallet.stevedore :as stevedore]
-   [pallet.utils :as utils])
-  (:use
-   clojure.test
-   pallet.test-utils
-   [pallet.api :only [lift plan-fn]]
-   [pallet.build-actions :only [build-actions build-session]]
-   [pallet.actions
-    :only [exec-script exec-script* exec-checked-script minimal-packages
-           package package-manager remote-file plan-when]]
-   [pallet.context :only [with-phase-context]]
-   [pallet.core.session :only [with-session]]
-   [pallet.crate :only [is-64bit? phase-context]]
-   [pallet.crate.automated-admin-user :only [automated-admin-user]]
-   [pallet.crate.environment :only [system-environment]]
-   [pallet.live-test
-    :only [exclude-images filter-images images test-for test-nodes]]
-   [pallet.script :only [with-script-context]]
-   [pallet.script.lib :only [package-manager-non-interactive]]
-   [pallet.script-test :only [is= is-true testing-script]]
-   [pallet.stevedore :only [script with-script-language]]))
+   [pallet.crate.java :as java]
+   [pallet.actions :refer [exec-checked-script exec-script* minimal-packages
+                           package-manager plan-when]]
+   [pallet.api :refer [lift plan-fn]]
+   [pallet.build-actions :refer [build-actions build-session]]
+   [pallet.core.session :refer [with-session]]
+   [pallet.crate :refer [is-64bit?]]
+   [pallet.crate.automated-admin-user :refer [automated-admin-user]]
+   [pallet.live-test :refer [exclude-images filter-images images test-for
+                             test-nodes]]
+   [pallet.script :refer [with-script-context]]
+   [pallet.script-test :refer [is-true testing-script]]
+   [pallet.script.lib :refer [package-manager-non-interactive]]
+   [pallet.stevedore :refer [script with-script-language]]
+   [pallet.test-utils :refer [with-ubuntu-script-template]]))
 
 (use-fixtures :once with-ubuntu-script-template)
 
