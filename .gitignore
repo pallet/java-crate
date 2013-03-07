@@ -2,3 +2,14 @@ target
 doc
 logs
 checkouts
+/doc-src/INTRO.md
+/doc-src/VERSION.md
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+.lein-deps-sum
+.lein-failures
+.lein-plugins
+.lein-repl-history
+resources/pallet_crate/java_crate/USAGE.md

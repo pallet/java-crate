@@ -9,4 +9,8 @@
                  [com.palletops/pallet "0.8.0-beta.1"]]
   :repositories {"sonatype"
                  {:url "https://oss.sonatype.org/content/repositories/releases/"
-                  :snapshots false}})
+                  :snapshots false}}
+  :resource {:resource-paths ["doc-src"]
+             :target-path "target/classes/pallet_crate/java_crate/"
+             :includes [#"doc-src/USAGE.*"]}
+  :prep-tasks ["resource" "crate-doc"])
