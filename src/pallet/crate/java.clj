@@ -382,7 +382,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
                     package-source repo-name (:package-source settings)))
                  (with-action-options
                      {:always-before #{`package}
-                      :always-after #{`package-source ::deb-install}
+                      :always-after #{`package-source ::deb-install ::install-package-source}
                       :action-id ::update-package-source}
                    (exec-checked-script
                     (str "Update package list for repository " repo-name)
