@@ -1,5 +1,9 @@
 # Release notes
 
+## java-0.7.2
+
+- Ensure that the webupd8 repo is added before the package manager update
+
 ## java-0.7.1
 
 - Add acceptance of oracle license in w8 install
