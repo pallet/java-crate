@@ -228,10 +228,17 @@
      :else
      (->
       settings
-      (assoc :install-strategy :w8-ppa)
+      (assoc :install-strategy :package-source)
       (update-in
        [:packages]
        #(or % ["oracle-java7-installer"]))
+      (update-in
+       [:preseeds]
+       #(or %
+            [{:package "oracle-java7-installer"
+              :question "shared/accepted-oracle-license-v1-1"
+              :type :select
+              :value true}]))
       (update-in
        [:package-source :aptitude]
        #(or % {:url "ppa:webupd8team/java"}))
