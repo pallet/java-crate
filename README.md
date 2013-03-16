@@ -1,7 +1,7 @@
-[Repository](https://github.com/pallet/java-crate) &#xb7; 
-[Issues](https://github.com/pallet/java-crate/issues) &#xb7; 
-[API docs](http://palletops.com/java-crate/0.8/api) &#xb7; 
-[Annotated source](http://palletops.com/java-crate/0.8/annotated/uberdoc.html) &#xb7; 
+[Repository](https://github.com/pallet/java-crate) &#xb7;
+[Issues](https://github.com/pallet/java-crate/issues) &#xb7;
+[API docs](http://palletops.com/java-crate/0.8/api) &#xb7;
+[Annotated source](http://palletops.com/java-crate/0.8/annotated/uberdoc.html) &#xb7;
 [Release Notes](https://github.com/pallet/java-crate/blob/develop/ReleaseNotes.md)
 
 Install and configure java.
