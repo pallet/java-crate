@@ -6,7 +6,7 @@
   :scm {:url "git@github.com:pallet/java-crate.git"}
 
   :dependencies [[org.clojure/clojure "1.4.0"]
-                 [com.palletops/pallet "0.8.0-beta.1"]]
+                 [com.palletops/pallet "0.8.0-beta.5"]]
   :repositories {"sonatype"
                  {:url "https://oss.sonatype.org/content/repositories/releases/"
                   :snapshots false}}

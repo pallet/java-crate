@@ -1,6 +1,6 @@
 {:dev {:dependencies
-       [[com.palletops/pallet "0.8.0-beta.1" :classifier "tests"]
-        [com.palletops/crates "0.8.0-SNAPSHOT"]
+       [[com.palletops/pallet "0.8.0-beta.5" :classifier "tests"]
+        [com.palletops/crates "0.1.0"]
         [ch.qos.logback/logback-classic "1.0.9"]]
        :plugins [[lein-set-version "0.3.0"]
                  [lein-resource "0.3.2"]]
@@ -21,4 +21,7 @@
                  "doc" ["do" "codox," "marg"]}}
  :release
  {:set-version
-  {:updates [{:path "README.md" :no-snapshot true}]}}}
+  {:updates [{:path "README.md" :no-snapshot true}]}}
+ :pallet {:dependencies
+          [[com.palletops/pallet "0.8.0-beta.5"]
+           [com.palletops/pallet "0.8.0-beta.5" :classifier "tests"]]}}
