@@ -1,4 +1,4 @@
-(defproject com.palletops/java-crate "0.8.0-SNAPSHOT"
+(defproject com.palletops/java-crate "0.8.0-beta.2"
   :description "Pallet crate to install, configure and use java"
   :url "http://palletops.com"
   :license {:name "Eclipse Public License"
@@ -7,9 +7,6 @@
 
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [com.palletops/pallet "0.8.0-beta.5"]]
-  :repositories {"sonatype"
-                 {:url "https://oss.sonatype.org/content/repositories/releases/"
-                  :snapshots false}}
   :resource {:resource-paths ["doc-src"]
              :target-path "target/classes/pallet_crate/java_crate/"
              :includes [#"doc-src/USAGE.*"]}
