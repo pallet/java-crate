@@ -86,6 +86,12 @@
 (def test-spec-from-tarfile
   (java/server-spec {:local-file "artifacts/jdk-7u17-linux-x64.tar.gz"}))
 
+(def test-spec-default
+  (java/server-spec {}))
+
+(def test-spec-java-7
+  (java/server-spec {:version "7" :vendor :oracle}))
+
 (def rh [{:os-family :centos} {:os-family :fedora} {:os-family :rhel}])
 
 (deftest live-test
