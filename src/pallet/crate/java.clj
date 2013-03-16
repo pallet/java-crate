@@ -6,29 +6,25 @@
    the .rpm.bin file onto the node with remote-file.  Then pass the location of
    the rpm.bin file on the node using the :rpm-bin option. The rpm will be
    installed."
-
-;; Add
-;;http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
-
   (:require
-   [pallet.script.lib :as lib])
-  (:use
-   [clojure.tools.logging :only [debugf]]
-   [pallet.action :only [with-action-options]]
-   [pallet.actions :only [exec-checked-script remote-directory remote-file]]
-   [pallet.api :only [plan-fn server-spec]]
-   [pallet.compute :only [os-hierarchy]]
-   [pallet.crate :only [defplan assoc-settings get-settings defmethod-plan]]
-   [pallet.crate-install :only [install]]
-   [pallet.crate.environment :only [system-environment]]
-   [pallet.stevedore :only [script fragment]]
-   [pallet.script :only [defimpl defscript]]
-   [pallet.utils :only [apply-map]]
+   [pallet.api :as api]
+   [pallet.crate-install :as crate-install]
+   [pallet.script.lib :as lib]
+   [clojure.tools.logging :refer [debugf]]
+   [pallet.action :refer [with-action-options]]
+   [pallet.actions :refer [content-options exec-checked-script
+                           remote-directory remote-file]]
+   [pallet.api :refer [plan-fn]]
+   [pallet.compute :refer [os-hierarchy]]
+   [pallet.crate :refer [assoc-settings defmethod-plan defplan get-settings]]
+   [pallet.crate.environment :refer [system-environment]]
+   [pallet.script :refer [defimpl defscript]]
+   [pallet.stevedore :refer [fragment script]]
+   [pallet.utils :refer [apply-map]]
    [pallet.version-dispatch
-    :only [defmulti-version-plan defmulti-version
-           defmethod-version-plan defmethod-version
-           os-map os-map-lookup]]
-   [pallet.versions :only [version-string]]))
+    :refer [defmethod-version defmethod-version-plan defmulti-version
+            defmulti-version-plan os-map os-map-lookup]]
+   [pallet.versions :refer [version-string]]))
 
 (def vendor-keywords #{:openjdk :sun :oracle})
 (def component-keywords #{:jdk :jre :bin})
@@ -158,6 +154,16 @@
     [os os-version version components]
   [(str "sun-java" (version-string version))])
 
+;; java should be auto installed as required
+(defmethod-version
+    oracle-packages {:os :os-x}
+    [os os-version version components]
+  [])
+
+
+(defn local-install-dir [version]
+  (str "/usr/local/java-" (version-string version)))
+
 ;;; ## Oracle java
 ;;; Based on supplied settings, decide which install strategy we are using
 ;;; for oracle java.
@@ -170,6 +176,12 @@
   (cond
    (:install-strategy settings) settings
    (:rpm settings) (assoc settings :install-strategy ::rpm-bin)
+
+   (first (filter (set content-options) (keys settings)))
+   (-> settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
+
    (:package-source settings) (assoc settings
                                 :install-strategy :package-source
                                 :packages (oracle-packages
@@ -208,13 +220,25 @@
        [:packages]
        #(or % (oracle-packages os os-version version (:components settings)))))
 
+     (first (filter (set content-options) (keys settings)))
+     (-> settings
+         (assoc :install-strategy ::tarfile)
+         (update-in [:install-dir] #(or % (local-install-dir version))))
+
      :else
      (->
       settings
-      (assoc :install-strategy :w8-ppa)
+      (assoc :install-strategy :package-source)
       (update-in
        [:packages]
        #(or % ["oracle-java7-installer"]))
+      (update-in
+       [:preseeds]
+       #(or %
+            [{:package "oracle-java7-installer"
+              :question "shared/accepted-oracle-license-v1-1"
+              :type :select
+              :value true}]))
       (update-in
        [:package-source :aptitude]
        #(or % {:url "ppa:webupd8team/java"}))
@@ -252,9 +276,18 @@
        [:packages]
        #(or % (oracle-packages os os-version version (:components settings)))))
 
+     (first (filter (set content-options) (keys settings)))
+     (-> settings
+         (assoc :install-strategy ::tarfile)
+         (update-in [:install-dir] #(or % (local-install-dir version))))
+
      :else (throw
             (Exception. "No install method selected for Oracle java 6")))))
 
+(defmethod-version-plan
+    oracle-java-settings {:os :os-x}
+    [os os-version version settings]
+  (assoc settings :install-strategy ::no-op))
 
 ;;; ## OpenJDK java
 ;;; Based on supplied settings, decide which install strategy we are using
@@ -266,6 +299,12 @@
     [os os-version version settings]
   (cond
    (:install-strategy settings) settings
+
+   (first (filter (set content-options) (keys settings)))
+   (-> settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
+
    :else (assoc settings
            :install-strategy :packages
            :packages (openjdk-packages
@@ -277,11 +316,22 @@
     [os os-version version settings]
   (cond
    (:install-strategy settings) settings
+
+   (first (filter (set content-options) (keys settings)))
+   (-> settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
+
    :else (assoc settings
            :install-strategy :packages
            :packages (openjdk-packages
                       os os-version version
                       (:components settings)))))
+
+(defmethod-version-plan
+    openjdk-java-settings {:os :os-x}
+    [os os-version version settings]
+  (assoc settings :install-strategy ::no-op))
 
 ;;; ## Settings
 (defn- settings-map
@@ -293,7 +343,7 @@
       (openjdk-java-settings (:version settings) settings)
       (oracle-java-settings (:version settings) settings))))
 
-(defplan java-settings
+(defplan settings
   "Capture settings for java
 
 - :vendor one of #{:openjdk :oracle :sun}
@@ -358,7 +408,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
 ;;; # Install
 
 ;;; custom install method for oracle rpm.bin method
-(defmethod-plan install ::rpm-bin
+(defmethod-plan crate-install/install ::rpm-bin
   [facility instance-id]
   (let [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
     (with-action-options {:action-id ::upload-rpm-bin
@@ -375,12 +425,59 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
        ("chmod" "+x" "java.rpm.bin")
        ("./java.rpm.bin" < "java-bin-resp")))))
 
-(defplan install-java
+(defmethod-plan crate-install/install ::tarfile
+  [facility instance-id]
+  (let [{:keys [install-dir] :as settings}
+        (get-settings facility {:instance-id instance-id})]
+    (apply-map
+     remote-directory install-dir
+     :strip-components 0
+     (select-keys settings content-options))
+    (exec-checked-script
+     "Update java alternatives"
+     ;; Add an alternaive
+     ("update-alternatives"
+      "--install" "/usr/bin/java" "java"
+      (str ~install-dir "/jdk*/bin/java") 1)
+     ("update-alternatives"
+      "--install" "/usr/bin/javac" "javac"
+      (str ~install-dir "/jdk*/bin/javac") 1)
+     ("update-alternatives"
+      "--install" "/usr/bin/javaws" "javaws"
+      (str ~install-dir "/jdk*/bin/javaws") 1)
+
+     ;; Use the alternative
+     ("update-alternatives"
+      "--set" "java" (str ~install-dir "/jdk*/bin/java"))
+     ("update-alternatives"
+      "--set" "javac" (str ~install-dir "/jdk*/bin/javac"))
+     ("update-alternatives"
+      "--set" "javaws" (str ~install-dir "/jdk*/bin/javaws")))))
+
+(defmethod-plan crate-install/install ::no-op
+  [facility instance-id]
+  (let [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
+    (with-action-options {:action-id ::upload-rpm-bin
+                          :always-before ::unpack-sun-rpm}
+      (apply-map
+       remote-file "java.rpm.bin"
+       (merge
+        {:local-file-options {:always-before #{`unpack-sun-rpm}} :mode "755"}
+        rpm)))
+    (with-action-options {:action-id ::unpack-sun-rpm}
+      (exec-checked-script
+       (format "Unpack java rpm %s" "java.rpm.bin")
+       (~lib/heredoc "java-bin-resp" "A\n\n" {})
+       ("chmod" "+x" "java.rpm.bin")
+       ("./java.rpm.bin" < "java-bin-resp")))))
+
+(defplan install
   "Install java. OpenJDK installs from system packages by default."
   [& {:keys [instance-id]}]
   (let [settings (get-settings
                   :java {:instance-id instance-id :default ::no-settings})]
-    (install :java instance-id)
+    (debugf "install settings %s" settings)
+    (crate-install/install :java instance-id)
     (set-environment (:components settings))))
 
 (defplan jce-policy-file
@@ -398,9 +495,10 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
     (script (str (jre-lib-security) ~filename))
     (merge {:owner "root" :group "root" :mode 644} options)))
 
-(defn java
+(defn server-spec
   "Returns a service-spec for installing java."
-  [settings]
-  (server-spec
-   :phases {:settings (plan-fn (java-settings settings))
-            :configure (plan-fn (install-java))}))
+  [settings & {:keys [instance-id] :as options}]
+  (api/server-spec
+   :phases {:settings (plan-fn
+                        (apply-map pallet.crate.java/settings settings options))
+            :configure (plan-fn (install))}))
