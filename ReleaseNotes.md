@@ -1,5 +1,22 @@
 # Release notes
 
+## java-0.8.0-beta.2
+
+- Update to pallet 0.8.0-beta.5 and crates 0.1.0
+
+- Add pallet.clj based integration tests
+
+- Fix w8 install strategy
+
+- Add install from tar.gz option
+
+- Standardise the settings and install defplan names
+  Rename install-java to install, java-settings to settings, and java to
+  server-spec.
+
+- Update to support crate metadata
+  Adds in crate metadata and README.md generation.
+
 ## java-0.8.0-beta.1
 
 - Update for pallet 0.8.0-beta.1
