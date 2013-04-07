@@ -501,4 +501,4 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   (api/server-spec
    :phases {:settings (plan-fn
                         (apply-map pallet.crate.java/settings settings options))
-            :configure (plan-fn (install))}))
+            :configure (plan-fn (install options))}))
