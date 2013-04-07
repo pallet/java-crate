@@ -1,5 +1,5 @@
 {:dev {:dependencies
-       [[com.palletops/pallet "0.8.0-beta.5" :classifier "tests"]
+       [[com.palletops/pallet "0.8.0-beta.6" :classifier "tests"]
         [com.palletops/crates "0.1.0"]
         [ch.qos.logback/logback-classic "1.0.9"]]
        :plugins [[lein-set-version "0.3.0"]
@@ -9,8 +9,8 @@
                  "live-test-down" ["pallet" "down"]
                  "live-test" ["do" "live-test-up," "live-test-down"]}}
  :latest {:dependencies
-          [[com.palletops/pallet "0.8.0-beta.3"]
-           [com.palletops/pallet "0.8.0-beta.3" :classifier "tests"]]}
+          [[com.palletops/pallet "0.8.0-SNAPSHOT"]
+           [com.palletops/pallet "0.8.0-SNAPSHOT" :classifier "tests"]]}
  :doc {:dependencies [[codox-md "0.2.0"]]
        :codox {:writer codox-md.writer/write-docs
                :output-dir "doc/0.8/api"
@@ -21,7 +21,4 @@
                  "doc" ["do" "codox," "marg"]}}
  :release
  {:set-version
-  {:updates [{:path "README.md" :no-snapshot true}]}}
- :pallet {:dependencies
-          [[com.palletops/pallet "0.8.0-beta.5"]
-           [com.palletops/pallet "0.8.0-beta.5" :classifier "tests"]]}}
+  {:updates [{:path "README.md" :no-snapshot true}]}}}
