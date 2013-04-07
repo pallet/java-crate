@@ -38,7 +38,9 @@
   ~(fragment
     @("dirname"
       @("dirname"
-        @(pipe ("update-alternatives" --list java) ("head" -n 1))))))
+        @(pipe ("update-alternatives" --query java)
+               ("grep" "Best:")
+               ("cut" -f 2 -d "' '"))))))
 (defimpl java-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))
 
@@ -50,7 +52,9 @@
   ~(fragment
     @("dirname"
       @("dirname"
-        @(pipe ("update-alternatives" --list javac) ("head" -n 1))))))
+        @(pipe ("update-alternatives" --query javac)
+               ("grep" "Best:")
+               ("cut" -f 2 -d "' '"))))))
 (defimpl jdk-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))
 
