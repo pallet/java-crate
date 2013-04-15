@@ -3028,8 +3028,8 @@ net.brehaut.ClojureTools = (function (SH) {
     build_tree: build_tree
   };
 })(SyntaxHighlighter);
-</script><title>com.palletops/java-crate -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">com.palletops/java-crate</h1><h2 class="project-version">0.8.0-beta.1</h2><br /><p>Pallet crate to install, configure and use java</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.4.0</td></tr><tr><td class="dep-name">com.palletops/pallet</td><td class="dotted"><hr /></td><td class="dep-version">0.8.0-beta.1</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#pallet.crate.java">pallet.crate.java</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#pallet.crate.java" name="pallet.crate.java"><h1 class="project-name">pallet.crate.java</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Crates for java installation and configuration.</p>
+</script><title>com.palletops/java-crate -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">com.palletops/java-crate</h1><h2 class="project-version">0.8.0-SNAPSHOT</h2><br /><p>Pallet crate to install, configure and use java</p>
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.4.0</td></tr><tr><td class="dep-name">com.palletops/pallet</td><td class="dotted"><hr /></td><td class="dep-version">0.8.0-beta.6</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#pallet.crate.java">pallet.crate.java</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#pallet.crate.java" name="pallet.crate.java"><h1 class="project-name">pallet.crate.java</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Crates for java installation and configuration.</p>
 
 <p>   Sun Java installation on CentOS requires use of Oracle rpm's. Download from
    http://www.oracle.com/technetwork/java/javase/downloads/index.html and get
@@ -3037,27 +3037,25 @@ net.brehaut.ClojureTools = (function (SH) {
    the rpm.bin file on the node using the :rpm-bin option. The rpm will be
    installed.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns pallet.crate.java
-;; Add
-;;http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
   (:require
-   [pallet.script.lib :as lib])
-  (:use
-   [clojure.tools.logging :only [debugf]]
-   [pallet.action :only [with-action-options]]
-   [pallet.actions :only [exec-checked-script remote-directory remote-file]]
-   [pallet.api :only [plan-fn server-spec]]
-   [pallet.compute :only [os-hierarchy]]
-   [pallet.crate :only [defplan assoc-settings get-settings defmethod-plan]]
-   [pallet.crate-install :only [install]]
-   [pallet.crate.environment :only [system-environment]]
-   [pallet.stevedore :only [script fragment]]
-   [pallet.script :only [defimpl defscript]]
-   [pallet.utils :only [apply-map]]
+   [pallet.api :as api]
+   [pallet.crate-install :as crate-install]
+   [pallet.script.lib :as lib]
+   [clojure.tools.logging :refer [debugf]]
+   [pallet.action :refer [with-action-options]]
+   [pallet.actions :refer [content-options exec-checked-script
+                           remote-directory remote-file]]
+   [pallet.api :refer [plan-fn]]
+   [pallet.compute :refer [os-hierarchy]]
+   [pallet.crate :refer [assoc-settings defmethod-plan defplan get-settings]]
+   [pallet.crate.environment :refer [system-environment]]
+   [pallet.script :refer [defimpl defscript]]
+   [pallet.stevedore :refer [fragment script]]
+   [pallet.utils :refer [apply-map]]
    [pallet.version-dispatch
-    :only [defmulti-version-plan defmulti-version
-           defmethod-version-plan defmethod-version
-           os-map os-map-lookup]]
-   [pallet.versions :only [version-string]]))</pre></td></tr><tr><td class="docs">
+    :refer [defmethod-version defmethod-version-plan defmulti-version
+            defmulti-version-plan os-map os-map-lookup]]
+   [pallet.versions :refer [version-string]]))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(def vendor-keywords #{:openjdk :sun :oracle})
 (def component-keywords #{:jdk :jre :bin})
 (def all-keywords (into #{} (concat vendor-keywords component-keywords)))</pre></td></tr><tr><td class="docs"><h2>Script</h2>
@@ -3068,7 +3066,9 @@ net.brehaut.ClojureTools = (function (SH) {
   ~(fragment
     @(&quot;dirname&quot;
       @(&quot;dirname&quot;
-        @(pipe (&quot;update-alternatives&quot; --list java) (&quot;head&quot; -n 1))))))
+        @(pipe (&quot;update-alternatives&quot; --query java)
+               (&quot;grep&quot; &quot;Best:&quot;)
+               (&quot;cut&quot; -f 2 -d &quot;' '&quot;))))))
 (defimpl java-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defscript jdk-home [])
@@ -3079,7 +3079,9 @@ net.brehaut.ClojureTools = (function (SH) {
   ~(fragment
     @(&quot;dirname&quot;
       @(&quot;dirname&quot;
-        @(pipe (&quot;update-alternatives&quot; --list javac) (&quot;head&quot; -n 1))))))
+        @(pipe (&quot;update-alternatives&quot; --query javac)
+               (&quot;grep&quot; &quot;Best:&quot;)
+               (&quot;cut&quot; -f 2 -d &quot;' '&quot;))))))
 (defimpl jdk-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defscript jre-lib-security [])
@@ -3163,7 +3165,13 @@ net.brehaut.ClojureTools = (function (SH) {
 </td><td class="codes"><pre class="brush: clojure">(defmethod-version
     oracle-packages {:os :arch-base :version [6]}
     [os os-version version components]
-  [(str &quot;sun-java&quot; (version-string version))])</pre></td></tr><tr><td class="docs"><h2>Oracle java</h2>
+  [(str &quot;sun-java&quot; (version-string version))])</pre></td></tr><tr><td class="docs"><p>java should be auto installed as required</p>
+</td><td class="codes"><pre class="brush: clojure">(defmethod-version
+    oracle-packages {:os :os-x}
+    [os os-version version components]
+  [])</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn local-install-dir [version]
+  (str &quot;/usr/local/java-&quot; (version-string version)))</pre></td></tr><tr><td class="docs"><h2>Oracle java</h2>
 
 <p>Based on supplied settings, decide which install strategy we are using
 for oracle java.</p>
@@ -3175,6 +3183,10 @@ for oracle java.</p>
   (cond
    (:install-strategy settings) settings
    (:rpm settings) (assoc settings :install-strategy ::rpm-bin)
+   (first (filter (set content-options) (keys settings)))
+   (-&gt; settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
    (:package-source settings) (assoc settings
                                 :install-strategy :package-source
                                 :packages (oracle-packages
@@ -3210,13 +3222,24 @@ for oracle java.</p>
       (update-in
        [:packages]
        #(or % (oracle-packages os os-version version (:components settings)))))
+     (first (filter (set content-options) (keys settings)))
+     (-&gt; settings
+         (assoc :install-strategy ::tarfile)
+         (update-in [:install-dir] #(or % (local-install-dir version))))
      :else
      (-&gt;
       settings
-      (assoc :install-strategy :w8-ppa)
+      (assoc :install-strategy :package-source)
       (update-in
        [:packages]
        #(or % [&quot;oracle-java7-installer&quot;]))
+      (update-in
+       [:preseeds]
+       #(or %
+            [{:package &quot;oracle-java7-installer&quot;
+              :question &quot;shared/accepted-oracle-license-v1-1&quot;
+              :type :select
+              :value true}]))
       (update-in
        [:package-source :aptitude]
        #(or % {:url &quot;ppa:webupd8team/java&quot;}))
@@ -3252,8 +3275,16 @@ for oracle java.</p>
       (update-in
        [:packages]
        #(or % (oracle-packages os os-version version (:components settings)))))
+     (first (filter (set content-options) (keys settings)))
+     (-&gt; settings
+         (assoc :install-strategy ::tarfile)
+         (update-in [:install-dir] #(or % (local-install-dir version))))
      :else (throw
-            (Exception. &quot;No install method selected for Oracle java 6&quot;)))))</pre></td></tr><tr><td class="docs"><h2>OpenJDK java</h2>
+            (Exception. &quot;No install method selected for Oracle java 6&quot;)))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod-version-plan
+    oracle-java-settings {:os :os-x}
+    [os os-version version settings]
+  (assoc settings :install-strategy ::no-op))</pre></td></tr><tr><td class="docs"><h2>OpenJDK java</h2>
 
 <p>Based on supplied settings, decide which install strategy we are using
 for openjdk java.</p>
@@ -3263,6 +3294,10 @@ for openjdk java.</p>
     [os os-version version settings]
   (cond
    (:install-strategy settings) settings
+   (first (filter (set content-options) (keys settings)))
+   (-&gt; settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
    :else (assoc settings
            :install-strategy :packages
            :packages (openjdk-packages
@@ -3273,11 +3308,19 @@ for openjdk java.</p>
     [os os-version version settings]
   (cond
    (:install-strategy settings) settings
+   (first (filter (set content-options) (keys settings)))
+   (-&gt; settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
    :else (assoc settings
            :install-strategy :packages
            :packages (openjdk-packages
                       os os-version version
-                      (:components settings)))))</pre></td></tr><tr><td class="docs"><p>Dispatch to either openjdk or oracle settings</p>
+                      (:components settings)))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod-version-plan
+    openjdk-java-settings {:os :os-x}
+    [os os-version version settings]
+  (assoc settings :install-strategy ::no-op))</pre></td></tr><tr><td class="docs"><p>Dispatch to either openjdk or oracle settings</p>
 
 <h2>Settings</h2>
 </td><td class="codes"><pre class="brush: clojure">(defn- settings-map
@@ -3325,7 +3368,7 @@ tar file to :debs.</p>
 <p>Use the webupd8.org ppa. This is the default</p>
 
 <p>http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html</p>
-</td><td class="codes"><pre class="brush: clojure">(defplan java-settings
+</td><td class="codes"><pre class="brush: clojure">(defplan settings
   [{:keys [vendor version components instance-id] :as settings}]
   (let [default-version (os-map-lookup @java-package-version)
         settings (settings-map
@@ -3343,7 +3386,50 @@ tar file to :debs.</p>
     (system-environment
      &quot;java&quot; {&quot;JAVA_HOME&quot; (fragment (~java-home))})))</pre></td></tr><tr><td class="docs"><h1>Install</h1>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>custom install method for oracle rpm.bin method</p>
-</td><td class="codes"><pre class="brush: clojure">(defmethod-plan install ::rpm-bin
+</td><td class="codes"><pre class="brush: clojure">(defmethod-plan crate-install/install ::rpm-bin
+  [facility instance-id]
+  (let [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
+    (with-action-options {:action-id ::upload-rpm-bin
+                          :always-before ::unpack-sun-rpm}
+      (apply-map
+       remote-file &quot;java.rpm.bin&quot;
+       (merge
+        {:local-file-options {:always-before #{`unpack-sun-rpm}} :mode &quot;755&quot;}
+        rpm)))
+    (with-action-options {:action-id ::unpack-sun-rpm}
+      (exec-checked-script
+       (format &quot;Unpack java rpm %s&quot; &quot;java.rpm.bin&quot;)
+       (~lib/heredoc &quot;java-bin-resp&quot; &quot;A\n\n&quot; {})
+       (&quot;chmod&quot; &quot;+x&quot; &quot;java.rpm.bin&quot;)
+       (&quot;./java.rpm.bin&quot; &lt; &quot;java-bin-resp&quot;)))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod-plan crate-install/install ::tarfile
+  [facility instance-id]
+  (let [{:keys [install-dir] :as settings}
+        (get-settings facility {:instance-id instance-id})]
+    (apply-map
+     remote-directory install-dir
+     :strip-components 0
+     (select-keys settings content-options))
+    (exec-checked-script
+     &quot;Update java alternatives&quot;
+     ;; Add an alternaive
+     (&quot;update-alternatives&quot;
+      &quot;--install&quot; &quot;/usr/bin/java&quot; &quot;java&quot;
+      (str ~install-dir &quot;/jdk*/bin/java&quot;) 1)
+     (&quot;update-alternatives&quot;
+      &quot;--install&quot; &quot;/usr/bin/javac&quot; &quot;javac&quot;
+      (str ~install-dir &quot;/jdk*/bin/javac&quot;) 1)
+     (&quot;update-alternatives&quot;
+      &quot;--install&quot; &quot;/usr/bin/javaws&quot; &quot;javaws&quot;
+      (str ~install-dir &quot;/jdk*/bin/javaws&quot;) 1)
+     ;; Use the alternative
+     (&quot;update-alternatives&quot;
+      &quot;--set&quot; &quot;java&quot; (str ~install-dir &quot;/jdk*/bin/java&quot;))
+     (&quot;update-alternatives&quot;
+      &quot;--set&quot; &quot;javac&quot; (str ~install-dir &quot;/jdk*/bin/javac&quot;))
+     (&quot;update-alternatives&quot;
+      &quot;--set&quot; &quot;javaws&quot; (str ~install-dir &quot;/jdk*/bin/javaws&quot;)))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod-plan crate-install/install ::no-op
   [facility instance-id]
   (let [{:keys [rpm]} (get-settings facility {:instance-id instance-id})]
     (with-action-options {:action-id ::upload-rpm-bin
@@ -3359,11 +3445,12 @@ tar file to :debs.</p>
        (~lib/heredoc &quot;java-bin-resp&quot; &quot;A\n\n&quot; {})
        (&quot;chmod&quot; &quot;+x&quot; &quot;java.rpm.bin&quot;)
        (&quot;./java.rpm.bin&quot; &lt; &quot;java-bin-resp&quot;)))))</pre></td></tr><tr><td class="docs"><p>Install java. OpenJDK installs from system packages by default.</p>
-</td><td class="codes"><pre class="brush: clojure">(defplan install-java
+</td><td class="codes"><pre class="brush: clojure">(defplan install
   [&amp; {:keys [instance-id]}]
   (let [settings (get-settings
                   :java {:instance-id instance-id :default ::no-settings})]
-    (install :java instance-id)
+    (debugf &quot;install settings %s&quot; settings)
+    (crate-install/install :java instance-id)
     (set-environment (:components settings))))</pre></td></tr><tr><td class="docs"><p>Installs a local JCE policy jar at the given path in the remote JAVA_HOME's
    lib/security directory, enabling the use of "unlimited strength" crypto
    implementations. Options are as for remote-file.</p>
@@ -3378,9 +3465,10 @@ tar file to :debs.</p>
   (apply-map remote-file
     (script (str (jre-lib-security) ~filename))
     (merge {:owner &quot;root&quot; :group &quot;root&quot; :mode 644} options)))</pre></td></tr><tr><td class="docs"><p>Returns a service-spec for installing java.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn java
-  [settings]
-  (server-spec
-   :phases {:settings (plan-fn (java-settings settings))
-            :configure (plan-fn (install-java))}))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+</td><td class="codes"><pre class="brush: clojure">(defn server-spec
+  [settings &amp; {:keys [instance-id] :as options}]
+  (api/server-spec
+   :phases {:settings (plan-fn
+                        (apply-map pallet.crate.java/settings settings options))
+            :install (plan-fn (install options))}))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>
