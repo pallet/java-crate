@@ -23,4 +23,6 @@
                  "doc" ["do" "codox," "marg"]}}
  :release
  {:set-version
-  {:updates [{:path "README.md" :no-snapshot true}]}}}
+  {:updates [{:path "README.md" :no-snapshot true}
+             {:path "resources/pallet_crate/java_crate/meta.edn"
+              :no-snapshot true}]}}}
