@@ -38,7 +38,9 @@
   ~(fragment
     @("dirname"
       @("dirname"
-        @(pipe ("update-alternatives" --list java) ("head" -n 1))))))
+        @(pipe ("update-alternatives" --query java)
+               ("grep" "Best:")
+               ("cut" -f 2 -d "' '"))))))
 (defimpl java-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))
 
@@ -50,7 +52,9 @@
   ~(fragment
     @("dirname"
       @("dirname"
-        @(pipe ("update-alternatives" --list javac) ("head" -n 1))))))
+        @(pipe ("update-alternatives" --query javac)
+               ("grep" "Best:")
+               ("cut" -f 2 -d "' '"))))))
 (defimpl jdk-home [#{:darwin :os-x}] []
   ~(fragment @JAVA_HOME))
 
@@ -501,4 +505,4 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   (api/server-spec
    :phases {:settings (plan-fn
                         (apply-map pallet.crate.java/settings settings options))
-            :configure (plan-fn (install))}))
+            :install (plan-fn (install options))}))

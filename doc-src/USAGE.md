@@ -9,6 +9,10 @@ or `server-spec`.
   :extends [(pallet.crate.java/server-spec {})])
 ```
 
+The default server-spec uses the `:settings` and `:install` phase, so
+remember to add the `:install` phase when lifting or converging a node
+including this crate.
+
 ## Settings
 
 The java crate uses the following settings:

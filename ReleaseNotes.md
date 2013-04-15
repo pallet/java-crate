@@ -1,5 +1,14 @@
 # Release notes
 
+## java-0.8.0-beta.3
+- Install crate during install phase
+
+- Fix install to take options to get instance-id
+
+- Ensure active alternative is used for env vars
+
+- Update to pallet-beta.6
+
 ## java-0.8.0-beta.2
 
 - Update to pallet 0.8.0-beta.5 and crates 0.1.0
