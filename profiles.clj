@@ -25,4 +25,5 @@
  {:set-version
   {:updates [{:path "README.md" :no-snapshot true}
              {:path "resources/pallet_crate/java_crate/meta.edn"
-              :no-snapshot true}]}}}
+              :no-snapshot true}]}}
+ :no-checkouts {:checkout-shares ^:replace []}}

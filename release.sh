@@ -16,7 +16,7 @@ echo "Start release of $version, previous version is $previous_version"
 echo ""
 echo ""
 
-lein do clean, test && \
+lein do clean, with-profile +no-checkouts test && \
 git flow release start $version || exit 1
 
 lein with-profile +release set-version ${version} :previous-version ${previous_version} \
@@ -28,6 +28,14 @@ echo "Changes since $previous_version"
 git --no-pager log --pretty=changelog java-$previous_version..
 echo ""
 echo ""
+
+$EDITOR resources/pallet_crate/java_crate/meta.edn
+$EDITOR doc-src/USAGE.md
+git add resources/pallet_crate/java_crate/meta.edn doc-src/USAGE.md doc-src/FOOTER.md \
+&& git commit -m "Updated metadata for $version" \
+&& lein crate-doc \
+|| exit 1
+
 echo "Now edit project.clj, ReleaseNotes and README"
 
 $EDITOR project.clj
@@ -39,8 +47,8 @@ echo -n "commiting project.clj, release notes and readme.  enter to continue:" \
 && git add project.clj ReleaseNotes.md README.md \
 && git commit -m "Updated project.clj, release notes and readme for $version" \
 && echo -n "Peform release.  enter to continue:" && read x \
-&& lein do clean, install, test, deploy clojars \
-&& rm pom.xml \
+&& lein do clean, install, with-profile +no-checkouts test, deploy clojars \
+&& rm -f pom.xml \
 && git flow release finish $version \
 && echo "Now push to github. Don't forget the tags!" \
 && lein with-profile +doc doc \
