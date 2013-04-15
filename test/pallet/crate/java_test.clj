@@ -64,12 +64,12 @@
    (first
     (build-actions {}
       (java/settings {:vendor :openjdk :components #{:jre}})
-      (java/install))))
+      (java/install {}))))
   (is
    (first
     (build-actions {:server {:image {} :packager :pacman}}
       (java/settings {:vendor :openjdk :components #{:jre}})
-      (java/install)))))
+      (java/install {})))))
 
 
 (deftest invoke-test
@@ -77,7 +77,8 @@
    (build-actions
     {}
     (java/settings {:vendor :openjdk :components #{:jdk}})
-    (java/install)
+    (java/install {})
+    (java/install {:install-id nil})
     (java/jce-policy-file "f" :content ""))))
 
 (deftest spec-test
@@ -120,7 +121,7 @@
                          (java/settings {:vendor :oracle :version "7"
                                          :components #{:jdk}
                                          :instance-id :oracle-7}))
-             :configure (plan-fn (java/install))
+             :configure (plan-fn (java/install {}))
              :configure2 (plan-fn
                            (plan-when has-debs?
                              (java/install :instance-id :oracle-6)))
@@ -174,7 +175,7 @@
                                 (if is-64bit
                                   "jdk-6u23-linux-x64-rpm.bin"
                                   "jdk-6u24-linux-i586-rpm.bin"))}})))
-         :configure (plan-fn (java/install))
+         :configure (plan-fn (java/install {}))
          :verify (plan-fn
                    (exec-checked-script
                     "check java installed"

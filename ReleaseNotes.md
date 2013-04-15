@@ -1,5 +1,9 @@
 # Release notes
 
+## java-0.8.0-beta.4
+
+- Install method takes a map rather than varargs
+
 ## java-0.8.0-beta.3
 - Install crate during install phase
 

@@ -477,7 +477,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
 
 (defplan install
   "Install java. OpenJDK installs from system packages by default."
-  [& {:keys [instance-id]}]
+  [{:keys [instance-id]}]
   (let [settings (get-settings
                   :java {:instance-id instance-id :default ::no-settings})]
     (debugf "install settings %s" settings)
