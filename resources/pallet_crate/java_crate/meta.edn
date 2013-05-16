@@ -1,4 +1,4 @@
-{:header "Java"
+{:header "java"
  :title "Install and configure java."
  :git-repo "https://github.com/pallet/java-crate"
  :api-docs "http://palletops.com/java-crate/0.8/api"
