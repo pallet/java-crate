@@ -396,6 +396,7 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
                   (merge {:version (or version
                                        (version-string default-version))}
                          settings))]
+    (debugf "java settings %s" settings)
     (assoc-settings :java settings {:instance-id instance-id})))
 
 ;;; ## Environment variable helpers
