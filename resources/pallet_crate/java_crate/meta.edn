@@ -4,7 +4,7 @@
  :api-docs "http://palletops.com/java-crate/0.8/api"
  :annotated-docs "http://palletops.com/java-crate/0.8/annotated/uberdoc.html"
  :tag-prefix "java-"
- :versions [{:pallet "0.8.0-beta.5" :version "0.8.0-beta.4"}
+ :versions [{:pallet "0.8.0-beta.10" :version "0.8.0-beta.5"}
             {:pallet "0.7" :version "0.7.1"
              :mvn-repo :sonatype :artifact-id "java"}
             {:pallet "0.6" :version "0.5.1"
