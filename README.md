@@ -9,7 +9,7 @@ Install and configure java.
 ### Dependency Information
 
 ```clj
-:dependencies [[com.palletops/java-crate "0.8.0-beta.4"]]
+:dependencies [[com.palletops/java-crate "0.8.0-beta.5"]]
 ```
 
 ### Releases
@@ -20,12 +20,12 @@ Install and configure java.
 </thead>
 <tbody>
   <tr>
-    <th>0.8.0-beta.5</th>
-    <td>0.8.0-beta.4</td>
+    <th>0.8.0-beta.10</th>
+    <td>0.8.0-beta.5</td>
     <td>clojars</td>
     <td>com.palletops</td>
-    <td><a href='https://github.com/pallet/java-crate/blob/java-0.8.0-beta.4/ReleaseNotes.md'>Release Notes</a></td>
-    <td><a href='https://github.com/pallet/java-crate/blob/java-0.8.0-beta.4/'>Source</a></td>
+    <td><a href='https://github.com/pallet/java-crate/blob/java-0.8.0-beta.5/ReleaseNotes.md'>Release Notes</a></td>
+    <td><a href='https://github.com/pallet/java-crate/blob/java-0.8.0-beta.5/'>Source</a></td>
   </tr>
   <tr>
     <th>0.7</th>
