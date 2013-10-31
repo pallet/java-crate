@@ -79,7 +79,8 @@
   (atom                                 ; allow for open extension
    (os-map
     {{:os :linux} [6]
-     {:os :ubuntu :os-version [12]} [7]})))
+     {:os :ubuntu :os-version [[10][12]]}[6]
+     {:os :ubuntu}[7]})))
 
 ;;; ## openJDK package names
 (defmulti-version openjdk-packages [os os-version version components]
