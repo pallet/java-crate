@@ -1,10 +1,11 @@
 {:dev {:dependencies
-       [[com.palletops/pallet "0.8.0-beta.6" :classifier "tests"]
+       [[com.palletops/pallet "0.8.0-RC.4" :classifier "tests"]
         [com.palletops/crates "0.1.0"]
         [ch.qos.logback/logback-classic "1.0.9"]]
        :plugins [[lein-set-version "0.3.0"]
                  [lein-resource "0.3.2" :exclusions [stencil]]
                  [com.palletops/lein-pallet-crate "0.1.0"]
+                 [com.palletops/pallet-lein "0.8.0-alpha.1"]
                  [codox/codox.leiningen "0.6.4"]
                  [lein-marginalia "0.7.1"]]
        :aliases {"live-test-up"

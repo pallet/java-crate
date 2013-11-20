@@ -79,7 +79,8 @@
   (atom                                 ; allow for open extension
    (os-map
     {{:os :linux} [6]
-     {:os :ubuntu :os-version [12]} [7]})))
+     {:os :ubuntu :os-version [[10][12]]}[6]
+     {:os :ubuntu}[7]})))
 
 ;;; ## openJDK package names
 (defmulti-version openjdk-packages [os os-version version components]
@@ -506,4 +507,5 @@ http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   (api/server-spec
    :phases {:settings (plan-fn
                         (pallet.crate.java/settings (merge settings options)))
-            :install (plan-fn (install options))}))
+            :install (plan-fn (install options))}
+   :default-phases [:install]))
