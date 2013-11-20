@@ -1,5 +1,13 @@
 # Release notes
 
+## java-0.8.0-beta.6
+
+- Update to pallet-0.8.0-RC.4
+
+- Add :default-phases to the server-spec
+
+- Update default java version for ubuntu 10 to 12
+
 ## java-0.8.0-beta.5
 
 - Fix :settings phase in server-spec
