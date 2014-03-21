@@ -16,15 +16,17 @@
                            remote-directory remote-file]]
    [pallet.api :refer [plan-fn]]
    [pallet.compute :refer [os-hierarchy]]
-   [pallet.crate :refer [assoc-settings defmethod-plan defplan get-settings]]
+   [pallet.crate :refer [assoc-settings defmethod-plan defplan get-settings
+                         os-family os-version]]
    [pallet.crate.environment :refer [system-environment]]
+   [pallet.crate.java.kb :as kb]
    [pallet.script :refer [defimpl defscript]]
    [pallet.stevedore :refer [fragment script]]
    [pallet.utils :refer [apply-map]]
    [pallet.version-dispatch
     :refer [defmethod-version defmethod-version-plan defmulti-version
             defmulti-version-plan os-map os-map-lookup]]
-   [pallet.versions :refer [version-string]]))
+   [pallet.versions :refer [version-vector version-string]]))
 
 (def vendor-keywords #{:openjdk :sun :oracle})
 (def component-keywords #{:jdk :jre :bin})
@@ -66,287 +68,78 @@
                 ("head" -1))
          "/jre/lib/security/")))
 
-;;; ## download install
-(defn download-install
-  "Download and unpack a jdk tar.gz file"
-  [session settings]
-  (apply-map remote-directory session "/usr/local" (:download settings)))
+;;; # Settings
+(defn- target-os []
+  (kb/os {:os-family (os-family)
+          :os-version (version-vector (os-version))}))
 
-;;; # Install
+(defn system-package-names
+  [{:keys [version components] :as spec}]
+  (kb/package-names (kb/default-target (target-os) spec)))
 
-;;; Default Java package version
-(def java-package-version
-  (atom                                 ; allow for open extension
-   (os-map
-    {{:os :linux} [6]
-     {:os :ubuntu :os-version [[10][12]]}[6]
-     {:os :ubuntu}[7]})))
+(defn from-system-packages
+  [{:keys [version components] :as spec}]
+  (kb/from-packages (system-package-names spec)))
 
-;;; ## openJDK package names
-(defmulti-version openjdk-packages [os os-version version components]
-  #'os-hierarchy)
+(defn from-rpm-bin
+  "Install from an RPM binary installer, located according to
+  the remote-file-source options."
+  [remote-file-source]
+  (merge
+   {:install-strategy ::rpm-bin
+    :rpm remote-file-source}))
 
-(defmethod-version
-    openjdk-packages {:os :rh-base}
-    [os os-version version components]
-  (map
-   (comp
-    (partial str "java-1." (version-string version) ".0-openjdk")
-    #({:jdk "-devel" :jre ""} % ""))
-   components))
+(defn from-webupd8
+  [{:keys [version] :as spec}]
+  (kb/from-webupd8 version))
 
-(defmethod-version
-    openjdk-packages {:os :debian-base}
-    [os os-version version components]
-  (map
-   (comp (partial str "openjdk-" (version-string version) "-") name)
-   components))
+(defn from-tar-file
+  "Install from a tar file."
+  [remote-directory-source
+   {:keys [install-dir]
+    :or {install-dir "/usr/local/java"}
+    :as options}]
+  (merge
+   {:install-strategy ::tarfile}
+   remote-directory-source))
 
-(defmethod-version
-    openjdk-packages {:os :arch-base}
-    [os os-version version components]
-  [(str "openjdk" (version-string version))])
+(defn from-rpm-bin
+  "Install from an RPM binary installer, located according to
+  the remote-file-source options."
+  [remote-file-source]
+  (merge
+   {:install-strategy ::rpm-bin
+    :rpm remote-file-source}))
 
-;;; ## Oracle package names
-(defmulti-version oracle-packages [os os-version version components]
-  #'os-hierarchy)
+(defn from-debs
+  "Install from an archive of debs files, located according to the
+  remote-directory-source options. The archive should have no top
+  level directory."
+  [remote-directory-source packages
+   {:keys [package-source] :or {package-source {}}}]
+  {:install-strategy :debs
+   :debs remote-directory-source
+   :packages packages
+   :package-source (->
+                    package-source
+                    (update-in [:url] #(or % "file://$(pwd)/pallet-packages"))
+                    (update-in [:path] #(or % "pallet-packages"))
+                    (update-in [:release] #(or % "./"))
+                    (update-in [:scopes] #(or % [])))})
 
-(defmethod-version
-    oracle-packages {:os :rh-base :version [7]}
-    [os os-version version components]
-  (map
-   (comp
-    (partial str "oracle-java" (version-string version) "-")
-    #({:jdk "-devel" :jre ""} % ""))
-   components))
-
-(defmethod-version
-    oracle-packages {:os :rh-base :version [6]}
-    [os os-version version components]
-  (map
-   (comp
-    (partial str "sun-java" (version-string version) "-")
-    #({:jdk "-devel" :jre ""} % ""))
-   components))
-
-(defmethod-version
-    oracle-packages {:os :debian-base :version [7]}
-    [os os-version version components]
-  {:pre [(seq components)]}
-  (conj
-   (map
-    (comp (partial str "oracle-java" (version-string version) "-") name)
-    components)
-   (str "oracle-java" (version-string version) "-bin")))
-
-(defmethod-version
-    oracle-packages {:os :debian-base :version [6]}
-    [os os-version version components]
-  {:pre [(seq components)]}
-  (conj
-   (map
-    (comp (partial str "sun-java" (version-string version) "-") name)
-    components)
-   (str "sun-java" (version-string version) "-bin")))
-
-(defmethod-version
-    oracle-packages {:os :arch-base :version [7]}
-    [os os-version version components]
-  [(str "oracle-java" (version-string version))])
-
-(defmethod-version
-    oracle-packages {:os :arch-base :version [6]}
-    [os os-version version components]
-  [(str "sun-java" (version-string version))])
-
-;; java should be auto installed as required
-(defmethod-version
-    oracle-packages {:os :os-x}
-    [os os-version version components]
-  [])
-
-
-(defn local-install-dir [version]
-  (str "/usr/local/java-" (version-string version)))
-
-;;; ## Oracle java
-;;; Based on supplied settings, decide which install strategy we are using
-;;; for oracle java.
-
-(defmulti-version-plan oracle-java-settings [version settings])
-
-(defmethod-version-plan
-    oracle-java-settings {:os :rh-base}
-    [os os-version version settings]
-  (cond
-   (:install-strategy settings) settings
-   (:rpm settings) (assoc settings :install-strategy ::rpm-bin)
-
-   (first (filter (set content-options) (keys settings)))
-   (-> settings
-       (assoc :install-strategy ::tarfile)
-       (update-in [:install-dir] #(or % (local-install-dir version))))
-
-   (:package-source settings) (assoc settings
-                                :install-strategy :package-source
-                                :packages (oracle-packages
-                                           os os-version version
-                                           (:components settings)))
-   :else (throw (Exception. "No install method selected for Oracle JDK"))))
-
-(defmethod-version-plan
-    oracle-java-settings {:os :debian-base :version [7]}
-    [os os-version version settings]
-  (let [strategy (:install-strategy settings)]
-    (cond
-     (or (= strategy :debs) (:debs settings))
-     (->
-      settings
-      (assoc :install-strategy :debs)
-      (update-in
-       [:packages]
-       #(or % (oracle-packages os os-version version (:components settings))))
-      (update-in
-       [:package-source :aptitude]
-       #(or (and % (assoc % :package-path (.getPath (java.net.URL. (:url %)))))
-            {:path "pallet-packages"
-             :url "file://$(pwd)/pallet-packages"
-             :release "./"
-             :scopes []}))
-      (update-in
-       [:package-source]
-       #(merge {:name "pallet-packages"} %)))
-
-     (or (= strategy :package-source) (:package-source settings))
-     (->
-      settings
-      (assoc :install-strategy :package-source)
-      (update-in
-       [:packages]
-       #(or % (oracle-packages os os-version version (:components settings)))))
-
-     (first (filter (set content-options) (keys settings)))
-     (-> settings
-         (assoc :install-strategy ::tarfile)
-         (update-in [:install-dir] #(or % (local-install-dir version))))
-
-     :else
-     (->
-      settings
-      (assoc :install-strategy :package-source)
-      (update-in
-       [:packages]
-       #(or % ["oracle-java7-installer"]))
-      (update-in
-       [:preseeds]
-       #(or %
-            [{:package "oracle-java7-installer"
-              :question "shared/accepted-oracle-license-v1-1"
-              :type :select
-              :value true}]))
-      (update-in
-       [:package-source :aptitude]
-       #(or % {:url "ppa:webupd8team/java"}))
-      (update-in
-       [:package-source :name]
-       #(or % "webupd8team-java-$(lsb_release -c -s)"))))))
-
-(defmethod-version-plan
-    oracle-java-settings {:os :debian-base :version [6]}
-    [os os-version version settings]
-  (let [strategy (:install-strategy settings)]
-    (cond
-     (or (= strategy :debs) (:debs settings))
-     (->
-      settings
-      (assoc :install-strategy :debs)
-      (update-in
-       [:packages]
-       #(or % (oracle-packages os os-version version (:components settings))))
-      (update-in
-       [:package-source :aptitude]
-       #(or (and % (assoc % :package-path (.getPath (java.net.URL. (:url %)))))
-            {:path "pallet-packages"
-             :url "file://$(pwd)/pallet-packages"
-             :release "./"
-             :scopes []}))
-      (update-in
-       [:package-source]
-       #(merge {:name "pallet-packages"} %)))
-     (or (= strategy :package-source) (:package-source settings))
-     (->
-      settings
-      (assoc :install-strategy :package-source)
-      (update-in
-       [:packages]
-       #(or % (oracle-packages os os-version version (:components settings)))))
-
-     (first (filter (set content-options) (keys settings)))
-     (-> settings
-         (assoc :install-strategy ::tarfile)
-         (update-in [:install-dir] #(or % (local-install-dir version))))
-
-     :else (throw
-            (Exception. "No install method selected for Oracle java 6")))))
-
-(defmethod-version-plan
-    oracle-java-settings {:os :os-x}
-    [os os-version version settings]
-  (assoc settings :install-strategy ::no-op))
-
-;;; ## OpenJDK java
-;;; Based on supplied settings, decide which install strategy we are using
-;;; for openjdk java.
-(defmulti-version-plan openjdk-java-settings [version settings])
-
-(defmethod-version-plan
-    openjdk-java-settings {:os :linux :version [7]}
-    [os os-version version settings]
-  (cond
-   (:install-strategy settings) settings
-
-   (first (filter (set content-options) (keys settings)))
-   (-> settings
-       (assoc :install-strategy ::tarfile)
-       (update-in [:install-dir] #(or % (local-install-dir version))))
-
-   :else (assoc settings
-           :install-strategy :packages
-           :packages (openjdk-packages
-                      os os-version version
-                      (:components settings)))))
-
-(defmethod-version-plan
-    openjdk-java-settings {:os :linux :version [6]}
-    [os os-version version settings]
-  (cond
-   (:install-strategy settings) settings
-
-   (first (filter (set content-options) (keys settings)))
-   (-> settings
-       (assoc :install-strategy ::tarfile)
-       (update-in [:install-dir] #(or % (local-install-dir version))))
-
-   :else (assoc settings
-           :install-strategy :packages
-           :packages (openjdk-packages
-                      os os-version version
-                      (:components settings)))))
-
-(defmethod-version-plan
-    openjdk-java-settings {:os :os-x}
-    [os os-version version settings]
-  (assoc settings :install-strategy ::no-op))
-
-;;; ## Settings
-(defn- settings-map
-  "Dispatch to either openjdk or oracle settings"
-  [settings]
-  ;; TODO - lookup default java version based on os-version
-  (let [settings (merge {:vendor :openjdk :components #{:jdk}} settings)]
-    (if (= :openjdk (:vendor settings))
-      (openjdk-java-settings (:version settings) settings)
-      (oracle-java-settings (:version settings) settings))))
+(defn from-default
+  "Install from the default strategy"
+  [{:keys [version vendor components] :as spec}]
+  (let [target (kb/default-target (target-os) spec)
+        strategies (kb/install-strategy target)]
+    (when (> (count strategies) 1)
+      (throw (ex-info "More than one install strategy available."
+                      {:strategies strategies})))
+    (when (not (seq strategies))
+      (throw (ex-info "No install strategy available." {})))
+    (merge
+     (first strategies)
+     (select-keys target [:version :components]))))
 
 (defplan settings
   "Capture settings for java
@@ -392,11 +185,12 @@ Use the webupd8.org ppa. This is the default
 
 http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html"
   [{:keys [vendor version components instance-id] :as settings}]
-  (let [default-version (os-map-lookup @java-package-version)
-        settings (settings-map
-                  (merge {:version (or version
-                                       (version-string default-version))}
-                         settings))]
+  (let [settings (if (:install-strategy settings)
+                   settings
+                   (merge settings
+                          (from-default
+                           (select-keys settings
+                                        [:version :vendor :components]))))]
     (debugf "java settings %s" settings)
     (assoc-settings :java settings {:instance-id instance-id})))
 
