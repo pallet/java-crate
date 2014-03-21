@@ -1,17 +1,24 @@
 {:dev {:dependencies
-       [[com.palletops/pallet "0.8.0-RC.4" :classifier "tests"]
-        [com.palletops/crates "0.1.0"]
+       [[org.clojure/clojure "1.5.1"]
+        [com.palletops/pallet "0.8.0-RC.9" :classifier "tests"]
+        [com.palletops/pallet-test-env "0.8.0-SNAPSHOT"]
+        [com.palletops/crates "0.1.2-SNAPSHOT"]
         [ch.qos.logback/logback-classic "1.0.9"]]
        :plugins [[lein-set-version "0.3.0"]
                  [lein-resource "0.3.2" :exclusions [stencil]]
                  [com.palletops/lein-pallet-crate "0.1.0"]
                  [com.palletops/pallet-lein "0.8.0-alpha.1"]
                  [codox/codox.leiningen "0.6.4"]
-                 [lein-marginalia "0.7.1"]]
+                 [lein-marginalia "0.7.1"]
+                 [configleaf "0.4.6"]]
        :aliases {"live-test-up"
                  ["pallet" "up" "--phases" "settings,configure,test"]
                  "live-test-down" ["pallet" "down"]
-                 "live-test" ["do" "live-test-up," "live-test-down"]}}
+                 "live-test" ["do" "live-test-up," "live-test-down"]}
+       :configleaf {:config-source-path "test"
+                    :namespace pallet.crate.java.project
+                    :verbose true}
+       :hooks [configleaf.hooks]}
  :latest {:dependencies
           [[com.palletops/pallet "0.8.0-SNAPSHOT"]
            [com.palletops/pallet "0.8.0-SNAPSHOT" :classifier "tests"]]}
@@ -29,13 +36,22 @@
              {:path "resources/pallet_crate/java_crate/meta.edn"
               :no-snapshot true}]}}
  :no-checkouts {:checkout-shares ^:replace []}
- :jclouds {:repositories
-           {"sonatype"
-            "https://oss.sonatype.org/content/repositories/releases/"}
-           :dependencies [[org.cloudhoist/pallet-jclouds "1.5.2"]
-                          [org.jclouds/jclouds-allblobstore "1.5.5"]
-                          [org.jclouds/jclouds-allcompute "1.5.5"]
-                          [org.jclouds.driver/jclouds-slf4j "1.5.5"
+ :jclouds {:dependencies [[com.palletops/pallet-jclouds "1.7.0-alpha.2"]
+                          [org.apache.jclouds.driver/jclouds-slf4j "1.7.1"
                            :exclusions [org.slf4j/slf4j-api]]
-                          [org.jclouds.driver/jclouds-sshj "1.5.5"]]}
- :vmfest {:dependencies [[com.palletops/pallet-vmfest "0.3.0-SNAPSHOT"]]}}
+                          [org.apache.jclouds.driver/jclouds-sshj "1.7.1"]]
+           :pallet/test-env {:service :aws
+                             :test-specs
+                             [{:selector :ubuntu-13-04}
+                              {:selector :ubuntu-13-10}]}}
+ :aws {:dependencies [[com.palletops/pallet-aws "0.2.0"]
+                      [ch.qos.logback/logback-classic "1.1.1"]
+                      [org.slf4j/jcl-over-slf4j "1.7.6"]]
+       :pallet/test-env {:service :ec2
+                         :test-specs
+                         [{:selector :ubuntu-13-10}
+                          {:selector :ubuntu-13-04}]}}
+ :vmfest {:dependencies [[com.palletops/pallet-vmfest "0.3.0-RC.1"]]
+          :pallet/test-env {:service :vmfest
+                            :test-specs
+                            [{:selector :ubuntu-13-04}]}}}
