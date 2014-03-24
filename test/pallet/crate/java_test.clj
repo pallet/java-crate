@@ -32,32 +32,31 @@
     (with-script-language :pallet.stevedore.bash/bash
       (script (package-manager-non-interactive)))))
 
-(deftest settings-map-test
-  (testing "openjdk"
-    (is (= {:packages ["openjdk-6-jre"], :install-strategy :packages
-            :vendor :openjdk :version [6] :components #{:jre}}
-           (with-session
-               (build-session
-                {:server {:image {:os-family :ubuntu :os-version "10.10"}}})
-             (#'pallet.crate.java/settings-map
-              {:vendor :openjdk :components #{:jre} :version [6]})))))
+;; (deftest settings-map-test
+;;   (testing "openjdk"
+;;     (is (= {:packages ["openjdk-6-jre"], :install-strategy :packages
+;;             :vendor :openjdk :version [6] :components #{:jre}}
+;;            (with-session
+;;                (build-session
+;;                 {:server {:image {:os-family :ubuntu :os-version "10.10"}}})
+;;              (#'pallet.crate.java/settings-map
+;;               {:vendor :openjdk :components #{:jre} :version [6]})))))
 
-  (testing "oracle"
-    (is (= {:packages ["sun-java6-bin" "sun-java6-jdk"],
-            :package-source {:name "pallet-packages"
-                             :aptitude {:path "pallet-packages"
-                                        :url "file://$(pwd)/pallet-packages"
-                                        :release "./" :scopes []}}
-            :install-strategy :debs
-            :debs "some.tar.gz"
-            :vendor :oracle :version [6] :components #{:jdk}}
-           (with-session
-               (build-session
-                {:server {:image {:os-family :ubuntu :os-version "10.10"}}})
-             (#'pallet.crate.java/settings-map
-              {:vendor :oracle :components #{:jdk} :version [6]
-               :debs "some.tar.gz"}))))))
-
+;;   (testing "oracle"
+;;     (is (= {:packages ["sun-java6-bin" "sun-java6-jdk"],
+;;             :package-source {:name "pallet-packages"
+;;                              :aptitude {:path "pallet-packages"
+;;                                         :url "file://$(pwd)/pallet-packages"
+;;                                         :release "./" :scopes []}}
+;;             :install-strategy :debs
+;;             :debs "some.tar.gz"
+;;             :vendor :oracle :version [6] :components #{:jdk}}
+;;            (with-session
+;;                (build-session
+;;                 {:server {:image {:os-family :ubuntu :os-version "10.10"}}})
+;;              (#'pallet.crate.java/settings-map
+;;               {:vendor :oracle :components #{:jdk} :version [6]
+;;                :debs "some.tar.gz"}))))))
 
 (deftest java-openjdk-test
   (is
