@@ -40,7 +40,7 @@
   [image spec]
   (seq (kb/install-strategy (kb/default-target (image-os image) spec))))
 
-(deftest default-settings
+(deftest ^:support default-settings
   (let [spec (group-spec "pallet-java"
                :node-spec (:node-spec *node-spec-meta*)
                :count 1
@@ -90,7 +90,7 @@
       (finally
         (converge (assoc spec :count 0) :compute *compute-service*)))))
 
-(deftest oracle-java-8
+(deftest ^:support oracle-java-8
   (let [java-spec {:vendor :oracle :version [8]}]
     ;; early check for default strategy existing, so we don't start a vm
     ;; just to fail it.

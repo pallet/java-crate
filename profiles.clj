@@ -11,6 +11,9 @@
                  [codox/codox.leiningen "0.6.4"]
                  [lein-marginalia "0.7.1"]
                  [configleaf "0.4.6"]]
+       :test-selectors {:default (complement :support)
+                        :support :support
+                        :all (constantly true)}
        :aliases {"live-test-up"
                  ["pallet" "up" "--phases" "settings,configure,test"]
                  "live-test-down" ["pallet" "down"]
