@@ -336,11 +336,15 @@
 
 (defn from-webupd8
   [version]
-  {:install-strategy :package-source
-   :package-source {:apt {:url "ppa:webupd8team/java"}
-                    :name "webupd8team-java"}
-   :packages [(str "oracle-java" (first version) "-installer")]})
-
+  (let [package (str "oracle-java" (first version) "-installer")]
+    {:install-strategy :package-source
+     :package-source {:apt {:url "ppa:webupd8team/java"}
+                      :name "webupd8team-java"}
+     :packages [package]
+     :preseeds [{:package package
+                 :question "shared/accepted-oracle-license-v1-1"
+                 :type :select
+                 :value true}]}))
 
 ;;; ## Rules
 (defrule from-system-packages-strategy

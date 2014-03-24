@@ -10,6 +10,7 @@
    [pallet.api :as api]
    [pallet.crate-install :as crate-install]
    [pallet.script.lib :as lib]
+   [clojure.string :refer [join]]
    [clojure.tools.logging :refer [debugf]]
    [pallet.action :refer [with-action-options]]
    [pallet.actions :refer [content-options exec-checked-script
@@ -127,19 +128,38 @@
                     (update-in [:release] #(or % "./"))
                     (update-in [:scopes] #(or % [])))})
 
-(defn from-default
+(defn- spec-string
+  [os target]
+  (str (:vendor target) " " (first (:version target))
+       " on " (:os-family os) " " (:os-version os)))
+
+(defn default-strategy
   "Install from the default strategy"
-  [{:keys [version vendor components] :as spec}]
-  (let [target (kb/default-target (target-os) spec)
+  [os {:keys [version vendor components] :as spec}]
+  (let [target (kb/default-target os spec)
         strategies (kb/install-strategy target)]
     (when (> (count strategies) 1)
-      (throw (ex-info "More than one install strategy available."
-                      {:strategies strategies})))
+      (throw
+       (ex-info
+        (str "More than one install strategy available for "
+             (spec-string os target)
+             ": "
+             (join ", " (map :install-strategy strategies)))
+        {:strategies strategies
+         :target target})))
     (when (not (seq strategies))
-      (throw (ex-info "No install strategy available." {})))
+      (throw
+       (ex-info (str "No default install strategy available for "
+                     (spec-string os target))
+                {:not-supported true})))
     (merge
      (first strategies)
      (select-keys target [:version :components]))))
+
+(defn from-default
+  "Install from the default strategy"
+  [{:keys [version vendor components] :as spec}]
+  (default-strategy (target-os) spec))
 
 (defplan settings
   "Capture settings for java

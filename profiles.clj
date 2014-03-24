@@ -50,8 +50,12 @@
        :pallet/test-env {:service :ec2
                          :test-specs
                          [{:selector :ubuntu-13-10}
-                          {:selector :ubuntu-13-04}]}}
+                          {:selector :ubuntu-13-04
+                           :expected [{:feature ["oracle-java-8"]
+                                       :expected? :not-supported}]}]}}
  :vmfest {:dependencies [[com.palletops/pallet-vmfest "0.3.0-RC.1"]]
           :pallet/test-env {:service :vmfest
                             :test-specs
-                            [{:selector :ubuntu-13-04}]}}}
+                            [{:selector :ubuntu-13-04
+                              :expected [{:feature ["oracle-java-8"]
+                                          :expected? :not-supported}]}]}}}
