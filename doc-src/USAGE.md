@@ -18,7 +18,7 @@ including this crate.
 The java crate uses the following settings:
 
 `:vendor`
-one of `#{:openjdk :oracle :sun}`
+one of `#{:openjdk :oracle :sun :zulu}`
 
 `:components`
 a set of `#{:jdk :jre}`

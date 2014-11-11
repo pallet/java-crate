@@ -165,9 +165,37 @@
     [os os-version version components]
   [])
 
-
 (defn local-install-dir [version]
   (str "/usr/local/java-" (version-string version)))
+
+;;; ## zulu package names and package source
+
+(defmulti-version zulu-packages [os os-version version components]
+  #'os-hierarchy)
+
+(defmethod-version
+  zulu-packages {:os :linux :version [[6] [8]]}
+  [os os-version version components]
+  [(str "zulu-" version)])
+
+(defmulti-version zulu-package-source [os os-version version]
+  #'os-hierarchy)
+
+(def ubuntu-zulu-package-source
+  {:name "zulu"
+   :apt {:scopes ["main"]
+         :release "`lsb_release -cs`"
+         :url "http://repos.azulsystems.cvcom/ubuntu"
+         :key-id "0x219BD9C9"
+         :key-server "hkp://keyserver.ubuntu.com:80"}})
+
+(defmethod-version zulu-package-source {:os :ubuntu :os-version [12 04]}
+  [os os-version version]
+  ubuntu-zulu-package-source)
+
+(defmethod-version zulu-package-source {:os :ubuntu :os-version [14 04]}
+  [os os-version version]
+  ubuntu-zulu-package-source)
 
 ;;; ## Oracle java
 ;;; Based on supplied settings, decide which install strategy we are using
@@ -338,20 +366,40 @@
     [os os-version version settings]
   (assoc settings :install-strategy ::no-op))
 
+;;; ## Zulu java
+
+(defmulti-version-plan zulu-java-settings [version settings])
+
+(defmethod-version-plan
+  zulu-java-settings {:os :linux}
+  [os os-version version settings]
+  (cond
+    (:install-strategy settings) settings
+    :else (let [package-source (or
+                                 (:package-source settings)
+                                 (zulu-package-source os os-version version))]
+            (assoc settings
+              :install-strategy :package-source
+              :package-source package-source
+              :packages (zulu-packages
+                          os os-version version
+                          (:components settings))))))
+
 ;;; ## Settings
 (defn- settings-map
   "Dispatch to either openjdk or oracle settings"
   [settings]
   ;; TODO - lookup default java version based on os-version
   (let [settings (merge {:vendor :openjdk :components #{:jdk}} settings)]
-    (if (= :openjdk (:vendor settings))
-      (openjdk-java-settings (:version settings) settings)
-      (oracle-java-settings (:version settings) settings))))
+    (case (:vendor settings)
+      :openjdk (openjdk-java-settings (:version settings) settings)
+      (:oracle :sun) (oracle-java-settings (:version settings) settings)
+      :zulu (zulu-java-settings (:version settings) settings))))
 
 (defplan settings
   "Capture settings for java
 
-- :vendor one of #{:openjdk :oracle :sun}
+- :vendor one of #{:openjdk :oracle :sun :zulu}
 - :components a set of #{:jdk :jre}
 
 - :package installs from packages
