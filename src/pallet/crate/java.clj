@@ -185,7 +185,7 @@
   {:name "zulu"
    :apt {:scopes ["main"]
          :release "`lsb_release -cs`"
-         :url "http://repos.azulsystems.cvcom/ubuntu"
+         :url "http://repos.azulsystems.com/ubuntu"
          :key-id "0x219BD9C9"
          :key-server "hkp://keyserver.ubuntu.com:80"}})
 
