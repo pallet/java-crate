@@ -176,7 +176,7 @@
 (defmethod-version
   zulu-packages {:os :linux :version [[6] [8]]}
   [os os-version version components]
-  [(str "zulu-" version)])
+  [(str "zulu-" (version-string version))])
 
 (defmulti-version zulu-package-source [os os-version version]
   #'os-hierarchy)
