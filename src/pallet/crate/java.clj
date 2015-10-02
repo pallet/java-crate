@@ -300,6 +300,23 @@
 (defmulti-version-plan openjdk-java-settings [version settings])
 
 (defmethod-version-plan
+    openjdk-java-settings {:os :linux :version [8]}
+    [os os-version version settings]
+  (cond
+   (:install-strategy settings) settings
+
+   (first (filter (set content-options) (keys settings)))
+   (-> settings
+       (assoc :install-strategy ::tarfile)
+       (update-in [:install-dir] #(or % (local-install-dir version))))
+
+   :else (assoc settings
+           :install-strategy :packages
+           :packages (openjdk-packages
+                      os os-version version
+                      (:components settings)))))
+
+(defmethod-version-plan
     openjdk-java-settings {:os :linux :version [7]}
     [os os-version version settings]
   (cond
