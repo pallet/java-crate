@@ -1,0 +1,10 @@
+language: clojure
+lein: lein2
+before_script:
+- lein2 version
+script: lein2 test
+after_success:
+- lein2 pallet-release push
+env:
+  global:
+    secure: PN2mjOwbsK33MamHxI8PTuc0n06liyzbikrWkpeJDNO0ddtmWjkuJ+8DeC44zsMxMbArzTbmShgQjFAyMOS2j+XAYwUwDq5h8Dr66sEFsMvlZ5Mw275pAgMmhi1JmlWpKAEvVPLS6abrlIjizB2IZHrRY2PzyVk+o/XFouSja54=
