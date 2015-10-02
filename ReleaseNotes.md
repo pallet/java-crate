@@ -1,3 +1,7 @@
+## java-0.8.0-beta.7
+
+- Add settings for java 8
+
 # Release notes
 
 ## java-0.8.0-beta.6
