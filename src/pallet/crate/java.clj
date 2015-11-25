@@ -194,10 +194,9 @@
                                            (:components settings)))
    :else (throw (Exception. "No install method selected for Oracle JDK"))))
 
-(defmethod-version-plan
-    oracle-java-settings {:os :debian-base :version [7]}
-    [os os-version version settings]
-  (let [strategy (:install-strategy settings)]
+(defn debian-oracle [os os-version version settings]
+  (let [strategy (:install-strategy settings)
+        v (first version)]
     (cond
      (or (= strategy :debs) (:debs settings))
      (->
@@ -236,11 +235,11 @@
       (assoc :install-strategy :package-source)
       (update-in
        [:packages]
-       #(or % ["oracle-java7-installer"]))
+       #(or % [(format "oracle-java%s-installer" v)]))
       (update-in
        [:preseeds]
        #(or %
-            [{:package "oracle-java7-installer"
+            [{:package (format "oracle-java%s-installer" v)
               :question "shared/accepted-oracle-license-v1-1"
               :type :select
               :value true}]))
@@ -252,8 +251,23 @@
        #(or % "webupd8team-java-$(lsb_release -c -s)"))))))
 
 (defmethod-version-plan
-    oracle-java-settings {:os :debian-base :version [6]}
-    [os os-version version settings]
+  oracle-java-settings {:os :debian-base :version [9]}
+  [os os-version version settings]
+  (debian-oracle os os-version version settings))
+
+(defmethod-version-plan
+  oracle-java-settings {:os :debian-base :version [8]}
+  [os os-version version settings]
+  (debian-oracle os os-version version settings))
+
+(defmethod-version-plan
+  oracle-java-settings {:os :debian-base :version [7]}
+  [os os-version version settings]
+  (debian-oracle os os-version version settings))
+
+(defmethod-version-plan
+  oracle-java-settings {:os :debian-base :version [6]}
+  [os os-version version settings]
   (let [strategy (:install-strategy settings)]
     (cond
      (or (= strategy :debs) (:debs settings))

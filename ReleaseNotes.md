@@ -1,3 +1,9 @@
+## 0.8.0-beta.9
+
+- Add install for debian and oracle java 8,9
+
+- Updata pallet version
+
 ## 0.8.0-beta.8
 
 - Updated version for next release cycle
